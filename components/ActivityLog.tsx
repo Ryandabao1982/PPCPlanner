@@ -4,6 +4,7 @@ interface Log {
     id: number;
     timestamp: string;
     action: string;
+    user?: string;
 }
 
 interface ActivityLogProps {
@@ -25,7 +26,10 @@ export const ActivityLog: React.FC<ActivityLogProps> = ({ logs }) => {
                         {logs.map(log => (
                             <li key={log.id} className="activity-log-item">
                                 <span className="activity-log-time">{new Date(log.timestamp).toLocaleTimeString()}</span>
-                                <span className="activity-log-action">{log.action}</span>
+                                <span className="activity-log-action">
+                                    {log.action}
+                                    {log.user && <span className="activity-log-user"> • {log.user}</span>}
+                                </span>
                             </li>
                         ))}
                     </ul>

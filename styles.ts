@@ -598,6 +598,7 @@ export const styles = `
   .activity-log-item { display: flex; gap: 1rem; padding: 0.5rem 0; border-bottom: 1px solid var(--border-color); font-size: 0.85rem; }
   .activity-log-item:last-child { border-bottom: none; }
   .activity-log-time { color: var(--text-color-secondary); }
+  .activity-log-user { color: var(--primary-color); font-weight: 500; font-size: 0.8rem; }
 
   /* Report View */
   .report-toolbar {
