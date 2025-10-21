@@ -1214,4 +1214,184 @@ export const styles = `
         padding: 1.5rem;
     }
 }
-`
+
+/* User Login Modal */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(10, 31, 68, 0.95);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+    backdrop-filter: blur(5px);
+}
+
+.modal-content {
+    background-color: var(--surface-color);
+    border-radius: var(--border-radius);
+    padding: 2.5rem;
+    max-width: 500px;
+    width: 90%;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+    border: 1px solid var(--border-color);
+    animation: fadeInUp 0.3s ease-out;
+}
+
+.user-login-modal .modal-header {
+    text-align: center;
+    margin-bottom: 2rem;
+}
+
+.user-login-modal .modal-icon {
+    font-size: 3rem;
+    color: var(--primary-color);
+    margin-bottom: 1rem;
+}
+
+.user-login-modal h2 {
+    font-size: 1.75rem;
+    margin: 0 0 0.5rem 0;
+    color: var(--text-color);
+}
+
+.user-login-modal .modal-subtitle {
+    font-size: 0.95rem;
+    color: var(--text-color-secondary);
+    margin: 0;
+}
+
+.user-login-form .form-group {
+    margin-bottom: 1.5rem;
+}
+
+.user-login-form label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 500;
+    color: var(--text-color);
+    font-size: 0.9rem;
+}
+
+.user-login-form input {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    font-size: 1rem;
+    font-family: var(--font-family);
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.user-login-form input:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(248, 181, 0, 0.1);
+}
+
+.user-login-form input.input-error {
+    border-color: var(--error-color);
+}
+
+.user-login-form .error-message {
+    display: block;
+    color: var(--error-color);
+    font-size: 0.85rem;
+    margin-top: 0.5rem;
+}
+
+.user-login-form .btn {
+    width: 100%;
+    padding: 0.875rem 1.5rem;
+    border: none;
+    border-radius: var(--border-radius);
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    font-family: var(--font-family);
+}
+
+.user-login-form .btn-primary {
+    background-color: var(--primary-color);
+    color: var(--bg-color);
+}
+
+.user-login-form .btn-primary:hover {
+    background-color: var(--primary-variant-color);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(248, 181, 0, 0.3);
+}
+
+.modal-note {
+    text-align: center;
+    font-size: 0.8rem;
+    color: var(--text-color-secondary);
+    margin-top: 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+}
+
+.modal-note i {
+    color: var(--info-color);
+}
+
+.user-profile-menu {
+    position: relative;
+}
+
+.user-profile-menu .user-menu-button {
+    background: none;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0;
+}
+
+.user-profile-menu .user-menu-dropdown {
+    position: absolute;
+    bottom: 100%;
+    left: 0;
+    background-color: var(--surface-color);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    padding: 0.5rem;
+    margin-bottom: 0.5rem;
+    min-width: 200px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    animation: fadeInUp 0.2s ease-out;
+}
+
+.user-profile-menu .user-menu-item {
+    padding: 0.5rem 1rem;
+    cursor: pointer;
+    border-radius: 4px;
+    transition: background-color 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.9rem;
+}
+
+.user-profile-menu .user-menu-item:hover {
+    background-color: var(--surface-color-2);
+}
+
+.user-profile-menu .user-menu-item i {
+    width: 1rem;
+    text-align: center;
+}
+`;

@@ -6,6 +6,7 @@ import { useLocalStorage } from './hooks/useLocalStorage';
 import { SAMPLE_SEARCH_QUERY_DATA } from './utils/constants';
 import { generateBulkUploadXlsx } from './utils/helpers';
 import { initialDatabase } from './database';
+import { getCurrentUser, saveUser, updateLastVisit, clearUser, isUserLoggedIn, User } from './utils/userLogger';
 
 import { CampaignCreator } from './components/CampaignCreator';
 import { CampaignHierarchy } from './components/CampaignManager';
@@ -25,6 +26,7 @@ import { BidManager } from './components/BidManager';
 import { SearchQueryReport } from './components/SearchQueryReport';
 import { DocumentationViewer } from './components/Documentation';
 import { PlanVisualizer } from './components/PlanVisualizer';
+import { UserLoginModal } from './components/UserLoginModal';
 
 type View = 'DASHBOARD' | 'CAMPAIGNS' | 'AD_GROUPS' | 'KEYWORDS' | 'ASSETS' | 'GOALS' | 'BIDDING' | 'REPORTS' | 'HELP';
 type ToastType = 'success' | 'error' | 'info' | 'warning';
@@ -47,32 +49,54 @@ const NAV_ITEMS: { id: View, name: string, icon: string }[] = [
     { id: 'HELP', name: 'Help & Docs', icon: 'fa-solid fa-circle-question' },
 ];
 
-const SidebarNav = ({ activeView, onSelectView }) => (
-    <nav className="sidebar-nav">
-        <div className="sidebar-header">
-            <div className="sidebar-logo">
-                GOOD<span>-</span>WIT
-            </div>
-        </div>
-        <ul className="nav-list">
-            {NAV_ITEMS.map(item => (
-                <li key={item.id} className={`nav-item ${activeView === item.id ? 'active' : ''}`} onClick={() => onSelectView(item.id)}>
-                    <i className={item.icon}></i>
-                    <span>{item.name}</span>
-                </li>
-            ))}
-        </ul>
-        <div className="sidebar-footer">
-            <div className="user-profile">
-                <img src="https://i.pravatar.cc/40?u=JohnDoe" alt="User Avatar" />
-                <div className="user-info">
-                    <span className="user-name">John Doe</span>
-                    <span className="user-title">Advertiser</span>
+const SidebarNav = ({ activeView, onSelectView, user, onChangeUser }) => {
+    const [showUserMenu, setShowUserMenu] = useState(false);
+    
+    return (
+        <nav className="sidebar-nav">
+            <div className="sidebar-header">
+                <div className="sidebar-logo">
+                    GOOD<span>-</span>WIT
                 </div>
             </div>
-        </div>
-    </nav>
-);
+            <ul className="nav-list">
+                {NAV_ITEMS.map(item => (
+                    <li key={item.id} className={`nav-item ${activeView === item.id ? 'active' : ''}`} onClick={() => onSelectView(item.id)}>
+                        <i className={item.icon}></i>
+                        <span>{item.name}</span>
+                    </li>
+                ))}
+            </ul>
+            <div className="sidebar-footer">
+                <div className="user-profile-menu">
+                    {showUserMenu && (
+                        <div className="user-menu-dropdown">
+                            <div className="user-menu-item" onClick={() => {
+                                onChangeUser();
+                                setShowUserMenu(false);
+                            }}>
+                                <i className="fa-solid fa-user-pen"></i>
+                                <span>Change User</span>
+                            </div>
+                        </div>
+                    )}
+                    <button 
+                        className="user-menu-button"
+                        onClick={() => setShowUserMenu(!showUserMenu)}
+                    >
+                        <div className="user-profile">
+                            <img src={`https://i.pravatar.cc/40?u=${user?.username || 'User'}`} alt="User Avatar" />
+                            <div className="user-info">
+                                <span className="user-name">{user?.username || 'User'}</span>
+                                <span className="user-title">Advertiser</span>
+                            </div>
+                        </div>
+                    </button>
+                </div>
+            </div>
+        </nav>
+    );
+};
 
 const Toast = ({ message, type, onClose }) => {
     const icons = {
@@ -120,6 +144,8 @@ const App = () => {
   const [activeKeywordTab, setActiveKeywordTab] = useState('bank');
   const [activeAssetTab, setActiveAssetTab] = useState('bank');
   const [targetedAdGroupId, setTargetedAdGroupId] = useState<number | null>(null);
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [showLoginModal, setShowLoginModal] = useState(false);
 
   const activeWorkspace = useMemo(() => {
     return workspaces[activeWorkspaceId] || null;
@@ -172,7 +198,8 @@ const App = () => {
     runHealthCheck();
     showToast("Health check complete.", "info");
     if (!activeWorkspaceId) return;
-    const newLog = { id: Date.now(), timestamp: new Date().toISOString(), action: "Plan health check re-run." };
+    const username = currentUser?.username || 'Unknown User';
+    const newLog = { id: Date.now(), timestamp: new Date().toISOString(), action: "Plan health check re-run.", user: username };
     setWorkspaces(prev => {
         const currentWorkspace = prev[activeWorkspaceId];
         if (!currentWorkspace) return prev;
@@ -197,6 +224,28 @@ const App = () => {
       setTargetedAdGroupId(null);
   };
 
+  // User tracking initialization
+  useEffect(() => {
+    const user = getCurrentUser();
+    if (user) {
+      setCurrentUser(user);
+      updateLastVisit();
+    } else {
+      setShowLoginModal(true);
+    }
+  }, []);
+
+  const handleUserLogin = (username: string) => {
+    const user = saveUser(username);
+    setCurrentUser(user);
+    setShowLoginModal(false);
+    showToast(`Welcome, ${username}!`, 'success');
+  };
+
+  const handleChangeUser = () => {
+    setShowLoginModal(true);
+  };
+
   useEffect(() => {
       if (!activeWorkspaceId && Object.keys(workspaces).length > 0) setActiveWorkspaceId(Object.keys(workspaces)[0]);
       if (Object.keys(workspaces).length === 0) setActiveWorkspaceId(null);
@@ -209,7 +258,8 @@ const App = () => {
   const setPlanFrozen = (isFrozen: boolean) => {
     if (!activeWorkspaceId) return;
     const logAction = isFrozen ? 'Plan FROZEN.' : 'Plan set to EDITABLE.';
-    const newLog = { id: Date.now(), timestamp: new Date().toISOString(), action: logAction };
+    const username = currentUser?.username || 'Unknown User';
+    const newLog = { id: Date.now(), timestamp: new Date().toISOString(), action: logAction, user: username };
 
     setWorkspaces(prev => {
         const currentWorkspace = prev[activeWorkspaceId];
@@ -235,7 +285,8 @@ const App = () => {
         return;
     }
     const newId = Date.now().toString();
-    const newWorkspace = { name: trimmedBrandName, brand: trimmedBrandName, campaigns: [], products: [], keywords: [], adGroups: [], goals: [], logs: [{ id: Date.now(), timestamp: new Date().toISOString(), action: `Created brand: ${trimmedBrandName}` }], isFrozen: false, searchQueryReports: [], exportHistory: [] };
+    const username = currentUser?.username || 'Unknown User';
+    const newWorkspace = { name: trimmedBrandName, brand: trimmedBrandName, campaigns: [], products: [], keywords: [], adGroups: [], goals: [], logs: [{ id: Date.now(), timestamp: new Date().toISOString(), action: `Created brand: ${trimmedBrandName}`, user: username }], isFrozen: false, searchQueryReports: [], exportHistory: [] };
     setWorkspaces(prev => ({ ...prev, [newId]: newWorkspace }));
     setActiveWorkspaceId(newId);
     showToast(`Brand "${trimmedBrandName}" created successfully!`);
@@ -262,7 +313,8 @@ const App = () => {
     if (!activeWorkspaceId) return;
 
     const itemName = Array.isArray(item) ? `${item.length} items` : (item.name || item.text || item.sku);
-    const newLog = { id: Date.now(), timestamp: new Date().toISOString(), action: `${logMessage}: ${itemName}` };
+    const username = currentUser?.username || 'Unknown User';
+    const newLog = { id: Date.now(), timestamp: new Date().toISOString(), action: `${logMessage}: ${itemName}`, user: username };
 
     if (!Array.isArray(item)) {
         setAnimatedItem({ key, id: item.id });
@@ -293,7 +345,8 @@ const App = () => {
     if (!activeWorkspaceId) return;
 
     const logAction = `Created campaign from playbook: ${campaign.name}`;
-    const newLog = { id: Date.now(), timestamp: new Date().toISOString(), action: logAction };
+    const username = currentUser?.username || 'Unknown User';
+    const newLog = { id: Date.now(), timestamp: new Date().toISOString(), action: logAction, user: username };
 
     showToast(`Campaign "${campaign.name}" created.`);
     setAnimatedItem({ key: 'campaigns', id: campaign.id });
@@ -317,7 +370,8 @@ const App = () => {
 
   const updateHandler = (key: string, logMessage: string, id: number, updates: any) => {
       if (!activeWorkspaceId) return;
-      const newLog = { id: Date.now(), timestamp: new Date().toISOString(), action: `${logMessage}: ID ${id}` };
+      const username = currentUser?.username || 'Unknown User';
+      const newLog = { id: Date.now(), timestamp: new Date().toISOString(), action: `${logMessage}: ID ${id}`, user: username };
       
       setWorkspaces(prev => {
           const currentWorkspace = prev[activeWorkspaceId];
@@ -342,6 +396,7 @@ const App = () => {
     if (!activeWorkspaceId) return;
 
     let deletedItemName = '';
+    const username = currentUser?.username || 'Unknown User';
     setWorkspaces(prev => {
         const currentWorkspace = prev[activeWorkspaceId];
         if (!currentWorkspace) return prev;
@@ -354,7 +409,7 @@ const App = () => {
         const newItems = currentItems.filter(item => item.id !== id);
         
         const logAction = `${logMessage}: ${deletedItemName}`;
-        const newLog = { id: Date.now(), timestamp: new Date().toISOString(), action: logAction };
+        const newLog = { id: Date.now(), timestamp: new Date().toISOString(), action: logAction, user: username };
         const newLogs = [newLog, ...(currentWorkspace.logs || [])].slice(0, 50);
 
         return {
@@ -372,6 +427,7 @@ const App = () => {
   const handleBulkAssignKeywords = (keywordIds: number[], adGroupIds: number[]) => {
     if (adGroupIds.length === 0 || !activeWorkspaceId) return;
 
+    const username = currentUser?.username || 'Unknown User';
     setWorkspaces(prev => {
         const currentWorkspace = prev[activeWorkspaceId];
         if (!currentWorkspace) return prev;
@@ -398,7 +454,7 @@ const App = () => {
         const adGroupNames = targetAdGroups.map(ag => ag.name).slice(0, 2).join(', ');
         const adGroupNamesDisplay = targetAdGroups.length > 2 ? `${adGroupNames}...` : adGroupNames;
         const logAction = `Bulk assigned ${keywordIds.length} keywords to ${adGroupIds.length} ad group(s): "${adGroupNamesDisplay}"`;
-        const newLog = { id: Date.now(), timestamp: new Date().toISOString(), action: logAction };
+        const newLog = { id: Date.now(), timestamp: new Date().toISOString(), action: logAction, user: username };
         const newLogs = [newLog, ...(currentWorkspace.logs || [])].slice(0, 50);
 
         showToast(`${keywordIds.length} keywords assigned to ${adGroupIds.length} ad group(s).`);
@@ -416,6 +472,7 @@ const App = () => {
   const handleBulkUnassignKeywords = (keywordIds: number[], adGroupIds: number[]) => {
       if (adGroupIds.length === 0 || !activeWorkspaceId) return;
 
+      const username = currentUser?.username || 'Unknown User';
       setWorkspaces(prev => {
         const currentWorkspace = prev[activeWorkspaceId];
         if (!currentWorkspace) return prev;
@@ -433,7 +490,7 @@ const App = () => {
         });
         
         const logAction = `Bulk unassigned ${keywordIds.length} keywords from ${adGroupIds.length} ad group(s): "${adGroupNamesDisplay}"`;
-        const newLog = { id: Date.now(), timestamp: new Date().toISOString(), action: logAction };
+        const newLog = { id: Date.now(), timestamp: new Date().toISOString(), action: logAction, user: username };
         const newLogs = [newLog, ...(currentWorkspace.logs || [])].slice(0, 50);
 
         showToast(`${keywordIds.length} keywords unassigned from ${adGroupIds.length} ad group(s).`, 'info');
@@ -451,6 +508,7 @@ const App = () => {
   const handleBulkAssignProducts = (productIds: number[], adGroupId: number | null) => {
     if (!adGroupId || !activeWorkspaceId) return;
 
+    const username = currentUser?.username || 'Unknown User';
     setWorkspaces(prev => {
         const currentWorkspace = prev[activeWorkspaceId];
         if (!currentWorkspace) return prev;
@@ -469,7 +527,7 @@ const App = () => {
 
         const adGroupName = newAdGroups.find(ag => ag.id === adGroupId)?.name;
         const logAction = `Assigned ${productIds.length} products to Ad Group "${adGroupName}"`;
-        const newLog = { id: Date.now(), timestamp: new Date().toISOString(), action: logAction };
+        const newLog = { id: Date.now(), timestamp: new Date().toISOString(), action: logAction, user: username };
         const newLogs = [newLog, ...(currentWorkspace.logs || [])].slice(0, 50);
 
         showToast(`${productIds.length} products assigned to ${adGroupName}.`);
@@ -487,6 +545,7 @@ const App = () => {
   const handleBulkUnassignProducts = (productIds: number[], adGroupId: number | null) => {
       if (!adGroupId || !activeWorkspaceId) return;
 
+      const username = currentUser?.username || 'Unknown User';
       setWorkspaces(prev => {
         const currentWorkspace = prev[activeWorkspaceId];
         if (!currentWorkspace) return prev;
@@ -501,7 +560,7 @@ const App = () => {
         });
         
         const logAction = `Unassigned ${productIds.length} products from Ad Group "${adGroupName}"`;
-        const newLog = { id: Date.now(), timestamp: new Date().toISOString(), action: logAction };
+        const newLog = { id: Date.now(), timestamp: new Date().toISOString(), action: logAction, user: username };
         const newLogs = [newLog, ...(currentWorkspace.logs || [])].slice(0, 50);
 
         showToast(`${productIds.length} products unassigned from ${adGroupName}.`, 'info');
@@ -519,7 +578,8 @@ const App = () => {
   const handleBulkUpdateKeywords = (ids: number[], updates: any) => {
     if (!activeWorkspaceId) return;
     const logAction = `Bulk updated ${ids.length} keywords.`;
-    const newLog = { id: Date.now(), timestamp: new Date().toISOString(), action: logAction };
+    const username = currentUser?.username || 'Unknown User';
+    const newLog = { id: Date.now(), timestamp: new Date().toISOString(), action: logAction, user: username };
 
     setWorkspaces(prev => {
         const currentWorkspace = prev[activeWorkspaceId];
@@ -542,7 +602,8 @@ const App = () => {
   const handleBulkDeleteKeywords = (ids: number[]) => {
       if (!activeWorkspaceId) return;
       const logAction = `Bulk deleted ${ids.length} keywords.`;
-      const newLog = { id: Date.now(), timestamp: new Date().toISOString(), action: logAction };
+      const username = currentUser?.username || 'Unknown User';
+      const newLog = { id: Date.now(), timestamp: new Date().toISOString(), action: logAction, user: username };
 
       setWorkspaces(prev => {
         const currentWorkspace = prev[activeWorkspaceId];
@@ -567,6 +628,7 @@ const App = () => {
   const handleDeleteCampaign = (id: number) => {
       if (!activeWorkspaceId) return;
       let deletedCampaignName = '';
+      const username = currentUser?.username || 'Unknown User';
       setWorkspaces(prev => {
           const currentWorkspace = prev[activeWorkspaceId];
           if (!currentWorkspace) return prev;
@@ -579,7 +641,7 @@ const App = () => {
           const newGoals = currentWorkspace.goals.filter(g => g.campaignId !== id);
 
           const logAction = `Deleted campaign: ${deletedCampaignName}`;
-          const newLog = { id: Date.now(), timestamp: new Date().toISOString(), action: logAction };
+          const newLog = { id: Date.now(), timestamp: new Date().toISOString(), action: logAction, user: username };
           const newLogs = [newLog, ...(currentWorkspace.logs || [])].slice(0, 50);
           
           return {
@@ -613,7 +675,8 @@ const App = () => {
             planData: JSON.parse(JSON.stringify(activeWorkspace))
         };
 
-        const newLog = { id: Date.now(), timestamp: new Date().toISOString(), action: 'Exported plan for bulk upload.' };
+        const username = currentUser?.username || 'Unknown User';
+        const newLog = { id: Date.now(), timestamp: new Date().toISOString(), action: 'Exported plan for bulk upload.', user: username };
         setWorkspaces(prev => {
             const currentWorkspace = prev[activeWorkspaceId];
             if (!currentWorkspace) return prev;
@@ -653,7 +716,8 @@ const App = () => {
   const handleImportSearchQueries = () => {
     if (!activeWorkspaceId) return;
     const logAction = `Imported ${SAMPLE_SEARCH_QUERY_DATA.length} sample search queries.`;
-    const newLog = { id: Date.now(), timestamp: new Date().toISOString(), action: logAction };
+    const username = currentUser?.username || 'Unknown User';
+    const newLog = { id: Date.now(), timestamp: new Date().toISOString(), action: logAction, user: username };
     setWorkspaces(prev => {
         const currentWorkspace = prev[activeWorkspaceId];
         if (!currentWorkspace) return prev;
@@ -672,7 +736,8 @@ const App = () => {
   const handleAddSearchQueriesAsKeywords = (queries, newKeywords) => {
     if (!activeWorkspaceId) return;
     const logAction = `Converted ${newKeywords.length} search queries to keywords.`;
-    const newLog = { id: Date.now(), timestamp: new Date().toISOString(), action: logAction };
+    const username = currentUser?.username || 'Unknown User';
+    const newLog = { id: Date.now(), timestamp: new Date().toISOString(), action: logAction, user: username };
 
     setWorkspaces(prev => {
         const currentWorkspace = prev[activeWorkspaceId];
@@ -833,9 +898,10 @@ const App = () => {
   return (
     <>
       <style>{styles}</style>
+      {showLoginModal && <UserLoginModal onLogin={handleUserLogin} />}
       <div className="app-container">
         <ToastContainer toasts={toasts} removeToast={removeToast} />
-        <SidebarNav activeView={activeView} onSelectView={handleSelectView} />
+        <SidebarNav activeView={activeView} onSelectView={handleSelectView} user={currentUser} onChangeUser={handleChangeUser} />
         <main className="main-content">
             <header className="main-header">
                 <h1>{headerTitle}</h1>
