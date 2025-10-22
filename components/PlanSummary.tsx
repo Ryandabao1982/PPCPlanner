@@ -65,6 +65,38 @@ export const PlanSummary: React.FC<PlanSummaryProps> = ({ workspace, goals, onNa
         <div className="section">
             <h2>Plan Overview</h2>
             <div style={{padding: '1.5rem'}}>
+                {onNavigate && (
+                    <div className="quick-actions">
+                        <button 
+                            className="quick-action-btn"
+                            onClick={() => onNavigate('CAMPAIGNS')}
+                        >
+                            <i className="fa-solid fa-plus"></i>
+                            Add Campaign
+                        </button>
+                        <button 
+                            className="quick-action-btn"
+                            onClick={() => onNavigate('KEYWORDS')}
+                        >
+                            <i className="fa-solid fa-key"></i>
+                            Add Keywords
+                        </button>
+                        <button 
+                            className="quick-action-btn"
+                            onClick={() => onNavigate('AD_GROUPS')}
+                        >
+                            <i className="fa-solid fa-layer-group"></i>
+                            Manage Ad Groups
+                        </button>
+                        <button 
+                            className="quick-action-btn"
+                            onClick={() => onNavigate('GOALS')}
+                        >
+                            <i className="fa-solid fa-crosshairs"></i>
+                            Set Goals
+                        </button>
+                    </div>
+                )}
                 <div className="stat-cards">
                     <MetricCard
                         title="Total Campaigns"
