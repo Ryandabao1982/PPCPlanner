@@ -157,6 +157,7 @@ export const initialDatabase = {
         isFrozen: false,
         searchQueryReports: [],
         exportHistory: [],
+        reportHistory: [],
     },
     '1721234567892': {
         name: 'EcoFresh - Reusable Bags',
@@ -173,5 +174,6 @@ export const initialDatabase = {
         isFrozen: false,
         searchQueryReports: [],
         exportHistory: [],
+        reportHistory: [],
     }
 };
