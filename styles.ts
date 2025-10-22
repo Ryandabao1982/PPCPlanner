@@ -318,7 +318,7 @@ export const styles = `
 
   /* Buttons */
   .button, .delete-button {
-    margin-top: 1rem; padding: 0.65rem 1.25rem; color: white; border: 1px solid var(--border-color); border-radius: var(--border-radius); cursor: pointer; font-size: 0.9rem; font-weight: 700; transition: all 0.2s; text-align: center;
+    margin-top: 1rem; padding: 0.65rem 1.25rem; color: white; border: 1px solid var(--border-color); border-radius: var(--border-radius); cursor: pointer; font-size: 0.9rem; font-weight: 700; transition: all 0.2s; text-align: center; min-height: 44px; display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem;
   }
   .button:hover:not(:disabled), .delete-button:hover:not(:disabled) { transform: translateY(-1px); filter: brightness(1.1); }
   .button:active:not(:disabled), .delete-button:active:not(:disabled) { transform: translateY(0); filter: brightness(1); }
@@ -1311,6 +1311,32 @@ export const styles = `
     }
     .docs-content .workflow-steps {
         grid-template-columns: 1fr;
+    }
+
+    /* Tablet optimizations */
+    .workspace-toolbar {
+        flex-wrap: wrap;
+    }
+
+    .stat-cards {
+        grid-template-columns: repeat(3, 1fr);
+    }
+
+    .main-header {
+        padding: 1rem 1.5rem;
+    }
+
+    .sidebar-nav {
+        width: 200px;
+    }
+
+    /* Campaign forms on tablets */
+    .campaign-form-row {
+        flex-wrap: wrap;
+    }
+
+    .form-group {
+        min-width: 200px;
     }
 }
 
