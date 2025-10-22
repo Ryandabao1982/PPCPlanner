@@ -35,6 +35,9 @@ export const PlanReportGenerator: React.FC<PlanReportGeneratorProps> = ({
         setIsGenerating(true);
         
         try {
+            // SECURITY NOTE: API key is exposed in client-side code.
+            // For production use, move AI API calls to a secure backend service to protect credentials.
+            // This client-side implementation is for demonstration purposes only.
             const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
             // Prepare data summary for AI analysis
@@ -69,7 +72,7 @@ export const PlanReportGenerator: React.FC<PlanReportGeneratorProps> = ({
 
             const goals = workspace.goals || [];
 
-            const prompt = `You are an expert Amazon PPC strategist creating a professional brand presentation report.
+            const prompt = `You are an expert Amazon PPC strategist creating a concise, impactful brand presentation report.
 
 Analyze the following PPC plan for brand "${workspace.brand}":
 
@@ -93,16 +96,22 @@ BIDDING STRATEGY:
 PERFORMANCE GOALS:
 ${goals.length > 0 ? goals.map(g => `- ${g.type}: ${g.value}%`).join('\n') : '- No goals set'}
 
-Create a comprehensive, professional report that includes:
-1. An executive summary highlighting the overall strategy
-2. Key strengths of the current plan (3-5 points)
-3. Growth opportunities and optimization areas (3-5 points)
-4. Budget analysis and allocation strategy
-5. Keyword strategy assessment
-6. Campaign structure evaluation
-7. Actionable recommendations (3-5 specific items)
+BRAND'S PERSPECTIVE - What they need to know:
+- Is their money being spent wisely?
+- What competitive advantages does this plan create?
+- What are the biggest opportunities for growth?
+- What specific actions should they take next?
 
-Use professional, brand-friendly language suitable for client presentation.`;
+Create a CONCISE, HIGH-IMPACT report with:
+1. Executive Summary (2-3 sentences max) - What's the big picture strategy and expected outcome?
+2. Key Strengths (3-4 bullet points) - What makes this plan competitive and effective?
+3. Growth Opportunities (3-4 bullet points) - Where can we improve and why it matters?
+4. Budget Analysis (2-3 sentences) - Is budget allocated effectively? Any concerns?
+5. Keyword Strategy (2-3 sentences) - Strong coverage or gaps to address?
+6. Campaign Structure (2-3 sentences) - Well-organized? Any structural improvements needed?
+7. Recommendations (3-4 specific actions) - Clear, prioritized next steps
+
+IMPORTANT: Be concise and insightful. Focus on business impact, not technical details. Use clear, direct language a brand executive would understand and value.`;
 
             const model = ai.getGenerativeModel({ model: "gemini-2.5-flash" });
             const response = await model.generateContent({
@@ -114,33 +123,33 @@ Use professional, brand-friendly language suitable for client presentation.`;
                         properties: {
                             executiveSummary: {
                                 type: Type.STRING,
-                                description: 'A concise executive summary of the PPC plan strategy'
+                                description: 'A concise 2-3 sentence executive summary focusing on strategy and expected business impact'
                             },
                             strengths: {
                                 type: Type.ARRAY,
-                                description: 'List of key strengths in the current plan',
+                                description: 'List of 3-4 key strengths, each being a concise statement of competitive advantage',
                                 items: { type: Type.STRING }
                             },
                             opportunities: {
                                 type: Type.ARRAY,
-                                description: 'Growth opportunities and areas for optimization',
+                                description: 'List of 3-4 growth opportunities with clear business value, avoiding technical jargon',
                                 items: { type: Type.STRING }
                             },
                             budgetAnalysis: {
                                 type: Type.STRING,
-                                description: 'Analysis of budget allocation and strategy'
+                                description: 'A concise 2-3 sentence analysis of budget allocation effectiveness and any concerns'
                             },
                             keywordStrategy: {
                                 type: Type.STRING,
-                                description: 'Assessment of keyword strategy and coverage'
+                                description: 'A concise 2-3 sentence assessment focusing on coverage and competitive positioning'
                             },
                             campaignStructure: {
                                 type: Type.STRING,
-                                description: 'Evaluation of campaign structure and organization'
+                                description: 'A concise 2-3 sentence evaluation of structure quality and any improvements needed'
                             },
                             recommendations: {
                                 type: Type.ARRAY,
-                                description: 'Specific, actionable recommendations',
+                                description: 'List of 3-4 specific, prioritized actions with clear business benefit',
                                 items: { type: Type.STRING }
                             }
                         },

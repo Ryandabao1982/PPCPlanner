@@ -9,19 +9,20 @@ The AI Plan Report Generator is a powerful feature that creates professional, AI
 ### 1. **AI-Powered Analysis**
 - Uses Google Gemini AI to analyze your entire PPC plan
 - Evaluates campaign structure, budget allocation, keyword strategy, and more
-- Generates insights based on industry best practices
+- Generates concise, brand-focused insights based on industry best practices
+- Answers key questions brands care about: ROI, competitive advantages, growth opportunities
 
-### 2. **Comprehensive Report Sections**
+### 2. **Comprehensive Yet Concise Report Sections**
 
 The generated report includes:
 
-- **Executive Summary**: High-level overview of your PPC strategy
-- **Key Strengths**: 3-5 highlights of what's working well in your plan
-- **Growth Opportunities**: 3-5 areas for optimization and expansion
-- **Budget Analysis**: Detailed breakdown of budget allocation and strategy
-- **Keyword Strategy**: Assessment of keyword coverage and match type distribution
-- **Campaign Structure**: Evaluation of campaign organization and naming
-- **Recommendations**: 3-5 specific, actionable next steps
+- **Executive Summary**: 2-3 sentence overview of strategy and expected business impact
+- **Key Strengths**: 3-4 concise points highlighting competitive advantages
+- **Growth Opportunities**: 3-4 actionable areas for improvement with clear business value
+- **Budget Analysis**: Brief assessment of budget allocation effectiveness
+- **Keyword Strategy**: Quick evaluation of coverage and competitive positioning
+- **Campaign Structure**: Short review of organization quality
+- **Recommendations**: 3-4 specific, prioritized next steps with clear benefits
 
 ### 3. **Beautiful Infographic Design**
 
@@ -88,8 +89,8 @@ For best results, ensure your workspace has:
 
 1. **Complete Your Plan**: The more complete your PPC plan, the better the AI analysis
 2. **Set Goals**: Add performance goals to get more targeted recommendations
-3. **Review Before Export**: Check that all sections make sense before exporting
-4. **Customize if Needed**: The exported HTML can be edited in a text editor if you want to add custom notes
+3. **Review for Brand Relevance**: Ensure the insights align with your brand's priorities
+4. **Focus on Impact**: The report emphasizes business outcomes over technical details
 5. **Keep History**: The workspace maintains a history of generated reports for reference
 
 ## Report History
@@ -122,6 +123,8 @@ All generated reports are tracked in the workspace with:
 - No data is stored on external servers (except Google's API processing)
 - Reports are stored locally in your browser's localStorage
 - Exported HTML files contain only the data you choose to export
+
+**Security Note**: The current implementation uses a client-side API key for demonstration purposes. For production deployments, consider implementing a backend service to protect API credentials and prevent exposure in client-side code.
 
 ## Future Enhancements
 
