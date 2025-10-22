@@ -27,6 +27,7 @@ import { SearchQueryReport } from './components/SearchQueryReport';
 import { DocumentationViewer } from './components/Documentation';
 import { PlanVisualizer } from './components/PlanVisualizer';
 import { UserLoginModal } from './components/UserLoginModal';
+import { PlanReportGenerator } from './components/PlanReportGenerator';
 
 type View = 'DASHBOARD' | 'CAMPAIGNS' | 'AD_GROUPS' | 'KEYWORDS' | 'ASSETS' | 'GOALS' | 'BIDDING' | 'REPORTS' | 'HELP';
 type ToastType = 'success' | 'error' | 'info' | 'warning';
@@ -832,6 +833,33 @@ const App = () => {
     showToast(`Added ${newKeywords.length} new keywords to the bank.`);
   };
 
+  const handleReportGenerated = (reportData: any) => {
+    if (!activeWorkspaceId) return;
+    const username = currentUser?.username || 'Unknown User';
+    const logAction = `Generated AI plan report for brand presentation`;
+    const newLog = { id: Date.now(), timestamp: new Date().toISOString(), action: logAction, user: username };
+
+    setWorkspaces(prev => {
+        const currentWorkspace = prev[activeWorkspaceId];
+        if (!currentWorkspace) return prev;
+        
+        const newLogs = [newLog, ...(currentWorkspace.logs || [])].slice(0, 50);
+        // Only retain the 10 most recent reports for performance and UI clarity.
+        // This prevents excessive memory usage and keeps the report history manageable for users.
+        const reportHistory = [...(currentWorkspace.reportHistory || []), reportData].slice(-10);
+
+        return {
+            ...prev,
+            [activeWorkspaceId]: {
+                ...currentWorkspace,
+                logs: newLogs,
+                reportHistory
+            }
+        };
+    });
+    showToast('AI report generated successfully!', 'success');
+  };
+
   const isFrozen = activeWorkspace?.isFrozen || false;
   const currentViewTitle = NAV_ITEMS.find(item => item.id === activeView)?.name || 'Dashboard';
 
@@ -876,6 +904,11 @@ const App = () => {
                 <div className="dashboard-grid">
                     <div className="dashboard-main">
                         <PlanSummary workspace={activeWorkspace} goals={activeWorkspace.goals} />
+                        <PlanReportGenerator 
+                            workspace={activeWorkspace} 
+                            disabled={isFrozen}
+                            onReportGenerated={handleReportGenerated}
+                        />
                     </div>
                     <div className="dashboard-sidebar">
                         <PlanApprover 
