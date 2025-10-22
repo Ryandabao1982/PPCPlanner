@@ -189,10 +189,13 @@ export const GoalManager: React.FC<GoalManagerProps> = ({ goals, campaigns, onAd
                                 setSelectedGoalType(e.target.value);
                                 const newConfig = GOAL_TYPES.find(g => g.value === e.target.value);
                                 if (newConfig) {
-                                    setGoalValue(newConfig.value === 'Target ACoS' ? 30 : 
-                                                 newConfig.value === 'Target ROAS' ? 4 :
-                                                 newConfig.value === 'Target CPC' ? 1 :
-                                                 newConfig.value === 'Target CTR' ? 0.5 : 5);
+                                    const DEFAULT_GOAL_VALUES: { [key: string]: number } = {
+                                        'Target ACoS': 30,
+                                        'Target ROAS': 4,
+                                        'Target CPC': 1,
+                                        'Target CTR': 0.5
+                                    };
+                                    setGoalValue(DEFAULT_GOAL_VALUES[newConfig.value] ?? 5);
                                 }
                             }}
                             disabled={disabled}
