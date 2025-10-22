@@ -395,7 +395,7 @@ IMPORTANT: Provide detailed, actionable insights with specific numbers and perce
             headStyles: { fillColor: [102, 126, 234] },
             margin: { left: 14, right: 14 }
         });
-        yPos = (doc as any).lastAutoTable.finalY + 10;
+        yPos = doc.lastAutoTable.finalY + 10;
 
         // Executive Summary
         checkNewPage(30);
