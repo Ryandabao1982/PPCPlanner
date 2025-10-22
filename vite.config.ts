@@ -18,6 +18,17 @@ export default defineConfig(({ mode }) => {
         alias: {
           '@': path.resolve(__dirname, '.'),
         }
+      },
+      build: {
+        rollupOptions: {
+          external: [],
+        },
+        commonjsOptions: {
+          include: [/jspdf/, /node_modules/],
+        }
+      },
+      optimizeDeps: {
+        include: ['jspdf', 'jspdf-autotable']
       }
     };
 });

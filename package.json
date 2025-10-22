@@ -1,12 +1,37 @@
 {
   "name": "goodwitppc-planner",
   "private": true,
-  "version": "0.0.0",
+  "version": "0.1.0",
+  "description": "AI-powered PPC campaign planner for Amazon Advertising (Sponsored Products, Sponsored Brands, Sponsored Display) with intelligent keyword discovery, budget optimization, and professional reporting",
   "type": "module",
+  "keywords": [
+    "ppc",
+    "amazon-advertising",
+    "campaign-management",
+    "keyword-research",
+    "sponsored-products",
+    "sponsored-brands",
+    "sponsored-display",
+    "ai-powered",
+    "gemini",
+    "react",
+    "typescript"
+  ],
+  "author": "Ryandabao1982",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Ryandabao1982/PPCPlanner"
+  },
+  "bugs": {
+    "url": "https://github.com/Ryandabao1982/PPCPlanner/issues"
+  },
+  "homepage": "https://github.com/Ryandabao1982/PPCPlanner#readme",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "dependencies": {
     "@google/genai": "^1.25.0",
@@ -19,7 +44,12 @@
   "devDependencies": {
     "@types/node": "^22.14.0",
     "@vitejs/plugin-react": "^5.0.0",
+    "jsdom": "^27.0.1",
     "typescript": "~5.8.2",
     "vite": "^6.2.0"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=9.0.0"
   }
 }
