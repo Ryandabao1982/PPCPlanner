@@ -77,7 +77,7 @@ export const KeywordBank: React.FC<KeywordBankProps> = ({ keywords, onAdd, onUpd
             const exclusionListString = EXCLUSION_WORD_LIST.join(', ');
 
             const response = await ai.models.generateContent({
-                model: "gemini-2.5-flash",
+                model: "gemini-2.0-flash-001",
                 contents: `You are an expert Amazon PPC campaign manager. Analyze the following seed keywords: ${keywordsToProcess.join(', ')}. Also, consider this list of exclusion words to identify negative keywords: ${exclusionListString}.
 
 Your task is:
