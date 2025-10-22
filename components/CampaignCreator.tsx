@@ -1,6 +1,7 @@
 import React, { useMemo, useReducer, useEffect } from 'react';
 import { CAMPAIGN_PLAYBOOK } from '../utils/constants';
 import { getYYYYMM } from '../utils/helpers';
+import { campaignValidators, CampaignValidationContext } from '../utils/validation';
 
 interface Campaign {
     name: string;
@@ -81,6 +82,41 @@ export const CampaignCreator: React.FC<CampaignCreatorProps> = ({ onAddCampaignF
             if (invalidAsin) {
                 error = `Invalid ASIN format: "${invalidAsin}". Must be B0 followed by 8 alphanumeric characters.`;
             }
+        }
+        
+        // Additional PT template validation
+        if (!error) {
+            const ptValidationContext: CampaignValidationContext = {
+                campaignType: playbookEntry.campaignType,
+                type: playbookEntry.type,
+                match: playbookEntry.match,
+                theme: playbookEntry.theme,
+                productTargets: asins,
+                defaultBid: playbookEntry.defaultBid,
+                bidStrategy: playbookEntry.bidStrategy,
+                budgetAllocation: playbookEntry.budgetAllocation,
+                tosModifier: playbookEntry.tosModifier,
+            };
+            const ptValidation = campaignValidators.validateCampaignTemplate(ptValidationContext, workspaceBrand);
+            if (!ptValidation.isValid) {
+                error = ptValidation.error || 'Campaign template validation failed';
+            }
+        }
+    } else {
+        // Validate non-PT campaigns with template rules
+        const validationContext: CampaignValidationContext = {
+            campaignType: playbookEntry.campaignType,
+            type: playbookEntry.type,
+            match: playbookEntry.match,
+            theme: playbookEntry.theme,
+            defaultBid: playbookEntry.defaultBid,
+            bidStrategy: playbookEntry.bidStrategy,
+            budgetAllocation: playbookEntry.budgetAllocation,
+            tosModifier: playbookEntry.tosModifier,
+        };
+        const templateValidation = campaignValidators.validateCampaignTemplate(validationContext, workspaceBrand);
+        if (!templateValidation.isValid) {
+            error = templateValidation.error || 'Campaign template validation failed';
         }
     }
     
