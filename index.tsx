@@ -28,6 +28,7 @@ import { DocumentationViewer } from './components/Documentation';
 import { PlanVisualizer } from './components/PlanVisualizer';
 import { UserLoginModal } from './components/UserLoginModal';
 import { PlanReportGenerator } from './components/PlanReportGenerator';
+import { TargetAsinManager } from './components/TargetAsinManager';
 
 type View = 'DASHBOARD' | 'CAMPAIGNS' | 'AD_GROUPS' | 'KEYWORDS' | 'ASSETS' | 'GOALS' | 'BIDDING' | 'REPORTS' | 'HELP';
 type ToastType = 'success' | 'error' | 'info' | 'warning';
@@ -180,7 +181,16 @@ const App = () => {
               errors.push(`Campaign <code>${campaign.name}</code> has no ad groups.`);
           } else {
               campaignAdGroups.forEach(adGroup => {
-                  if (!adGroup.keywords || adGroup.keywords.length === 0) errors.push(`Ad Group <code>${adGroup.name}</code> in campaign <code>${campaign.name}</code> has no keywords.`);
+                  // Skip keyword validation for Product Targeting campaigns (PT, AUTO, VIDEO)
+                  const isProductTargeting = adGroup.matchType === 'PT' || campaign.match === 'PT';
+                  const isAutoTargeting = adGroup.matchType === 'AUTO' || campaign.match === 'AUTO';
+                  const isVideoTargeting = adGroup.matchType === 'VIDEO' || campaign.match === 'VIDEO';
+                  const skipKeywordCheck = isProductTargeting || isAutoTargeting || isVideoTargeting;
+                  
+                  if (!skipKeywordCheck && (!adGroup.keywords || adGroup.keywords.length === 0)) {
+                      errors.push(`Ad Group <code>${adGroup.name}</code> in campaign <code>${campaign.name}</code> has no keywords.`);
+                  }
+                  
                   if (adGroup.keywords && adGroup.keywords.length > 0) {
                       const adGroupMatchType = adGroup.matchType;
                       if (adGroupMatchType) {
@@ -981,12 +991,14 @@ const App = () => {
             const assetTabs = [
                 { id: 'bank', label: 'Product Bank' },
                 { id: 'assigner', label: 'Product Assigner' },
+                { id: 'targets', label: 'Target ASINs' },
             ];
             return (
                 <>
                     <Tabs tabs={assetTabs} activeTab={activeAssetTab} onTabClick={setActiveAssetTab} />
                     {activeAssetTab === 'bank' && <ProductManager products={activeWorkspace.products} onAdd={(p) => createHandler('products', 'Added product', p)} onUpdate={(id, u) => updateHandler('products', 'Updated product', id, u)} onDelete={(id) => deleteHandler('products', 'Deleted product', id)} disabled={isFrozen} animatedItemId={animatedItem.key === 'products' ? animatedItem.id : null} />}
                     {activeAssetTab === 'assigner' && <ProductAssigner products={activeWorkspace.products} adGroups={activeWorkspace.adGroups} campaigns={activeWorkspace.campaigns} onBulkAssign={handleBulkAssignProducts} onBulkUnassign={handleBulkUnassignProducts} disabled={isFrozen} />}
+                    {activeAssetTab === 'targets' && <TargetAsinManager campaigns={activeWorkspace.campaigns} adGroups={activeWorkspace.adGroups} onUpdateAdGroupTargets={(id, targets) => updateHandler('adGroups', 'Updated target ASINs', id, { productTargets: targets })} disabled={isFrozen} />}
                 </>
             );
         case 'GOALS':
