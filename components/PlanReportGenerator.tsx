@@ -104,8 +104,8 @@ Create a comprehensive, professional report that includes:
 
 Use professional, brand-friendly language suitable for client presentation.`;
 
-            const response = await ai.models.generateContent({
-                model: "gemini-2.5-flash",
+            const model = ai.getGenerativeModel({ model: "gemini-2.5-flash" });
+            const response = await model.generateContent({
                 contents: prompt,
                 config: {
                     responseMimeType: "application/json",
