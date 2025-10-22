@@ -29,6 +29,8 @@ interface ReportInsights {
         byCampaignType: Array<{type: string, count: number, avgBudget: number}>;
         byTheme: Array<{theme: string, count: number}>;
     };
+    goalsAnalysis: string;
+    goalsBreakdown: Array<{campaignName: string, goalType: string, targetValue: number}>;
     recommendations: Array<{priority: string, action: string, impact: string, effort: string}>;
     performanceProjections: {
         estimatedImpressions: string;
@@ -93,6 +95,16 @@ export const PlanReportGenerator: React.FC<PlanReportGeneratorProps> = ({
                 : 0;
 
             const goals = workspace.goals || [];
+            
+            // Map goals to campaign names for better context
+            const goalsWithCampaigns = goals.map(g => {
+                const campaign = workspace.campaigns.find(c => c.id === g.campaignId);
+                return {
+                    campaignName: campaign?.name || 'Unknown Campaign',
+                    goalType: g.type,
+                    targetValue: g.value
+                };
+            });
 
             // Calculate detailed metrics
             const matchTypeBreakdown = workspace.keywords.reduce((acc, k) => {
@@ -135,7 +147,7 @@ BIDDING STRATEGY:
 - Total Products: ${totalProducts}
 
 PERFORMANCE GOALS:
-${goals.length > 0 ? goals.map(g => `- ${g.type}: ${g.value}%`).join('\n') : '- No goals set'}
+${goals.length > 0 ? goalsWithCampaigns.map(g => `- ${g.campaignName}: ${g.goalType} = ${g.targetValue}${g.goalType.includes('ACoS') || g.goalType.includes('CTR') || g.goalType.includes('CVR') ? '%' : g.goalType.includes('CPC') ? ' $' : 'x'}`).join('\n') : '- No goals set'}
 
 Create a COMPREHENSIVE, DETAILED report with:
 1. Executive Summary (3-4 sentences) - Strategic overview and expected business outcomes
@@ -153,8 +165,10 @@ Create a COMPREHENSIVE, DETAILED report with:
 10. Campaign Metrics - Detailed object with:
     - byCampaignType: array of {type, count, avgBudget}
     - byTheme: array of {theme, count}
-11. Recommendations (6-8 prioritized actions) - Each with: priority (High/Medium/Low), action (string), impact (string), effort (string)
-12. Performance Projections - Object with:
+11. Goals Analysis (3-4 sentences) - Evaluate if goals are realistic, alignment with budget/strategy, and identify missing goals
+12. Goals Breakdown - Array of objects with: campaignName (string), goalType (string), targetValue (number)
+13. Recommendations (6-8 prioritized actions) - Each with: priority (High/Medium/Low), action (string), impact (string), effort (string)
+14. Performance Projections - Object with:
     - estimatedImpressions (string with range)
     - estimatedClicks (string with range)
     - estimatedConversions (string with range)
@@ -269,6 +283,22 @@ IMPORTANT: Provide detailed, actionable insights with specific numbers and perce
                                     }
                                 }
                             },
+                            goalsAnalysis: {
+                                type: Type.STRING,
+                                description: '3-4 sentence evaluation of goals: realism, alignment with budget/strategy, missing goals'
+                            },
+                            goalsBreakdown: {
+                                type: Type.ARRAY,
+                                description: 'Breakdown of goals by campaign',
+                                items: {
+                                    type: Type.OBJECT,
+                                    properties: {
+                                        campaignName: { type: Type.STRING },
+                                        goalType: { type: Type.STRING },
+                                        targetValue: { type: Type.NUMBER }
+                                    }
+                                }
+                            },
                             recommendations: {
                                 type: Type.ARRAY,
                                 description: 'List of 6-8 prioritized recommendations',
@@ -295,7 +325,7 @@ IMPORTANT: Provide detailed, actionable insights with specific numbers and perce
                                 }
                             }
                         },
-                        required: ['executiveSummary', 'strengths', 'opportunities', 'weaknesses', 'budgetAnalysis', 'budgetBreakdown', 'keywordStrategy', 'keywordMetrics', 'campaignStructure', 'campaignMetrics', 'recommendations', 'performanceProjections']
+                        required: ['executiveSummary', 'strengths', 'opportunities', 'weaknesses', 'budgetAnalysis', 'budgetBreakdown', 'keywordStrategy', 'keywordMetrics', 'campaignStructure', 'campaignMetrics', 'goalsAnalysis', 'goalsBreakdown', 'recommendations', 'performanceProjections']
                     }
                 }
             });
@@ -610,6 +640,42 @@ IMPORTANT: Provide detailed, actionable insights with specific numbers and perce
                 });
                 yPos = (doc as any).lastAutoTable.finalY + 10;
             }
+        }
+
+        // Performance Goals
+        checkNewPage(30);
+        doc.setFontSize(14);
+        doc.setTextColor(102, 126, 234);
+        doc.text('Performance Goals', 14, yPos);
+        yPos += 8;
+
+        doc.setFontSize(10);
+        doc.setTextColor(60, 60, 60);
+        const goalsAnalysisLines = doc.splitTextToSize(reportInsights.goalsAnalysis, pageWidth - 28);
+        doc.text(goalsAnalysisLines, 14, yPos);
+        yPos += goalsAnalysisLines.length * 5 + 10;
+
+        // Goals Breakdown Table
+        if (reportInsights.goalsBreakdown && reportInsights.goalsBreakdown.length > 0) {
+            checkNewPage(40);
+            autoTable(doc, {
+                startY: yPos,
+                head: [['Campaign', 'Goal Type', 'Target Value']],
+                body: reportInsights.goalsBreakdown.map(item => [
+                    item.campaignName,
+                    item.goalType,
+                    item.targetValue.toString() + (item.goalType.includes('ACoS') || item.goalType.includes('CTR') || item.goalType.includes('CVR') ? '%' : item.goalType.includes('CPC') ? ' $' : 'x')
+                ]),
+                theme: 'grid',
+                headStyles: { fillColor: [102, 126, 234] },
+                margin: { left: 14, right: 14 }
+            });
+            yPos = (doc as any).lastAutoTable.finalY + 10;
+        } else {
+            doc.setFontSize(10);
+            doc.setTextColor(100, 100, 100);
+            doc.text('No performance goals have been set for this plan.', 14, yPos);
+            yPos += 10;
         }
 
         // Recommendations
@@ -1215,6 +1281,44 @@ IMPORTANT: Provide detailed, actionable insights with specific numbers and perce
                                                 </div>
                                             )}
                                         </div>
+                                    </div>
+                                )}
+                            </div>
+
+                            <div className="section">
+                                <h2>
+                                    <i className="fa-solid fa-crosshairs"></i>
+                                    Performance Goals
+                                </h2>
+                                <p>{reportInsights.goalsAnalysis}</p>
+                                
+                                {reportInsights.goalsBreakdown && reportInsights.goalsBreakdown.length > 0 ? (
+                                    <div style={{ marginTop: '1rem', overflowX: 'auto' }}>
+                                        <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '1rem' }}>
+                                            <thead>
+                                                <tr style={{ backgroundColor: '#667eea', color: 'white' }}>
+                                                    <th style={{ padding: '0.75rem', textAlign: 'left', border: '1px solid #ddd' }}>Campaign</th>
+                                                    <th style={{ padding: '0.75rem', textAlign: 'left', border: '1px solid #ddd' }}>Goal Type</th>
+                                                    <th style={{ padding: '0.75rem', textAlign: 'right', border: '1px solid #ddd' }}>Target Value</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {reportInsights.goalsBreakdown.map((item, idx) => (
+                                                    <tr key={idx} style={{ backgroundColor: idx % 2 === 0 ? '#f8f9fa' : 'white' }}>
+                                                        <td style={{ padding: '0.75rem', border: '1px solid #ddd' }}>{item.campaignName}</td>
+                                                        <td style={{ padding: '0.75rem', border: '1px solid #ddd' }}>{item.goalType}</td>
+                                                        <td style={{ padding: '0.75rem', textAlign: 'right', border: '1px solid #ddd' }}>
+                                                            {item.targetValue}{item.goalType.includes('ACoS') || item.goalType.includes('CTR') || item.goalType.includes('CVR') ? '%' : item.goalType.includes('CPC') ? ' $' : 'x'}
+                                                        </td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                ) : (
+                                    <div style={{ marginTop: '1rem', padding: '1rem', background: '#f8f9fa', borderRadius: '8px', textAlign: 'center', color: '#666' }}>
+                                        <i className="fa-solid fa-info-circle" style={{ marginRight: '0.5rem' }}></i>
+                                        No performance goals have been set for this plan.
                                     </div>
                                 )}
                             </div>
