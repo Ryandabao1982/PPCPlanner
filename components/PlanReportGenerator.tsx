@@ -38,7 +38,7 @@ export const PlanReportGenerator: React.FC<PlanReportGeneratorProps> = ({
             // SECURITY NOTE: API key is exposed in client-side code.
             // For production use, move AI API calls to a secure backend service to protect credentials.
             // This client-side implementation is for demonstration purposes only.
-            const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+            const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
             // Prepare data summary for AI analysis
             const totalCampaigns = workspace.campaigns.length;
@@ -113,10 +113,9 @@ Create a CONCISE, HIGH-IMPACT report with:
 
 IMPORTANT: Be concise and insightful. Focus on business impact, not technical details. Use clear, direct language a brand executive would understand and value.`;
 
-            const model = ai.getGenerativeModel({ model: "gemini-2.5-flash" });
-            const response = await model.generateContent({
-                contents: prompt,
-                config: {
+            const model = ai.getGenerativeModel({ 
+                model: "gemini-2.5-flash",
+                generationConfig: {
                     responseMimeType: "application/json",
                     responseSchema: {
                         type: Type.OBJECT,
@@ -157,6 +156,8 @@ IMPORTANT: Be concise and insightful. Focus on business impact, not technical de
                     }
                 }
             });
+            
+            const response = await model.generateContent(prompt);
 
             const insights = JSON.parse(response.text);
             setReportInsights(insights);
