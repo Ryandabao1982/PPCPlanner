@@ -1,5 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { GoogleGenAI, Type } from "@google/genai";
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
 interface PlanReportGeneratorProps {
     workspace: any;
@@ -11,10 +13,29 @@ interface ReportInsights {
     executiveSummary: string;
     strengths: string[];
     opportunities: string[];
+    weaknesses: string[];
     budgetAnalysis: string;
+    budgetBreakdown: Array<{campaignType: string, amount: number, percentage: number}>;
     keywordStrategy: string;
+    keywordMetrics: {
+        totalKeywords: number;
+        assignedKeywords: number;
+        unassignedKeywords: number;
+        byIntent: Array<{intent: string, count: number, percentage: number}>;
+        byMatchType: Array<{matchType: string, count: number, percentage: number}>;
+    };
     campaignStructure: string;
-    recommendations: string[];
+    campaignMetrics: {
+        byCampaignType: Array<{type: string, count: number, avgBudget: number}>;
+        byTheme: Array<{theme: string, count: number}>;
+    };
+    recommendations: Array<{priority: string, action: string, impact: string, effort: string}>;
+    performanceProjections: {
+        estimatedImpressions: string;
+        estimatedClicks: string;
+        estimatedConversions: string;
+        assumptions: string[];
+    };
 }
 
 const LoadingSpinner = () => <div className="spinner"></div>;
@@ -72,7 +93,23 @@ export const PlanReportGenerator: React.FC<PlanReportGeneratorProps> = ({
 
             const goals = workspace.goals || [];
 
-            const prompt = `You are an expert Amazon PPC strategist creating a concise, impactful brand presentation report.
+            // Calculate detailed metrics
+            const matchTypeBreakdown = workspace.keywords.reduce((acc, k) => {
+                const matchType = k.matchType || 'BROAD';
+                acc[matchType] = (acc[matchType] || 0) + 1;
+                return acc;
+            }, {});
+
+            const campaignTypeDetails = workspace.campaigns.reduce((acc, c) => {
+                if (!acc[c.type]) {
+                    acc[c.type] = { count: 0, totalBudget: 0 };
+                }
+                acc[c.type].count += 1;
+                acc[c.type].totalBudget += c.budget || 0;
+                return acc;
+            }, {});
+
+            const prompt = `You are an expert Amazon PPC strategist creating a DETAILED, DATA-DRIVEN brand presentation report.
 
 Analyze the following PPC plan for brand "${workspace.brand}":
 
@@ -82,12 +119,15 @@ CAMPAIGN OVERVIEW:
 - Total Daily Budget: $${totalBudget.toFixed(2)}
 - Campaign Types: ${JSON.stringify(campaignTypes)}
 - Campaign Themes: ${JSON.stringify(campaignThemes)}
+- Campaign Type Budget Breakdown: ${JSON.stringify(campaignTypeDetails)}
 
 KEYWORD STRATEGY:
 - Total Keywords: ${totalKeywords}
 - Assigned Keywords: ${assignedKeywordsCount}
+- Unassigned Keywords: ${totalKeywords - assignedKeywordsCount}
 - Assignment Rate: ${totalKeywords > 0 ? ((assignedKeywordsCount / totalKeywords) * 100).toFixed(0) : 0}%
 - Intent Breakdown: ${JSON.stringify(intentBreakdown)}
+- Match Type Breakdown: ${JSON.stringify(matchTypeBreakdown)}
 
 BIDDING STRATEGY:
 - Average Default Bid: $${averageBid.toFixed(2)}
@@ -96,22 +136,30 @@ BIDDING STRATEGY:
 PERFORMANCE GOALS:
 ${goals.length > 0 ? goals.map(g => `- ${g.type}: ${g.value}%`).join('\n') : '- No goals set'}
 
-BRAND'S PERSPECTIVE - What they need to know:
-- Is their money being spent wisely?
-- What competitive advantages does this plan create?
-- What are the biggest opportunities for growth?
-- What specific actions should they take next?
+Create a COMPREHENSIVE, DETAILED report with:
+1. Executive Summary (3-4 sentences) - Strategic overview and expected business outcomes
+2. Key Strengths (5-7 bullet points) - Detailed competitive advantages
+3. Growth Opportunities (5-7 bullet points) - Specific improvement areas with business impact
+4. Weaknesses (3-5 bullet points) - Areas of concern or risk
+5. Budget Analysis (3-4 sentences) - Detailed budget effectiveness and allocation concerns
+6. Budget Breakdown - Array of objects with: campaignType (string), amount (number), percentage (number)
+7. Keyword Strategy (3-4 sentences) - In-depth coverage analysis and gaps
+8. Keyword Metrics - Detailed object with:
+   - totalKeywords, assignedKeywords, unassignedKeywords (numbers)
+   - byIntent: array of {intent, count, percentage}
+   - byMatchType: array of {matchType, count, percentage}
+9. Campaign Structure (3-4 sentences) - Structural quality and improvement recommendations
+10. Campaign Metrics - Detailed object with:
+    - byCampaignType: array of {type, count, avgBudget}
+    - byTheme: array of {theme, count}
+11. Recommendations (6-8 prioritized actions) - Each with: priority (High/Medium/Low), action (string), impact (string), effort (string)
+12. Performance Projections - Object with:
+    - estimatedImpressions (string with range)
+    - estimatedClicks (string with range)
+    - estimatedConversions (string with range)
+    - assumptions (array of 3-4 key assumptions)
 
-Create a CONCISE, HIGH-IMPACT report with:
-1. Executive Summary (2-3 sentences max) - What's the big picture strategy and expected outcome?
-2. Key Strengths (3-4 bullet points) - What makes this plan competitive and effective?
-3. Growth Opportunities (3-4 bullet points) - Where can we improve and why it matters?
-4. Budget Analysis (2-3 sentences) - Is budget allocated effectively? Any concerns?
-5. Keyword Strategy (2-3 sentences) - Strong coverage or gaps to address?
-6. Campaign Structure (2-3 sentences) - Well-organized? Any structural improvements needed?
-7. Recommendations (3-4 specific actions) - Clear, prioritized next steps
-
-IMPORTANT: Be concise and insightful. Focus on business impact, not technical details. Use clear, direct language a brand executive would understand and value.`;
+IMPORTANT: Provide detailed, actionable insights with specific numbers and percentages. Focus on data-driven recommendations that demonstrate clear ROI potential.`;
 
             const response = await ai.models.generateContent({
                 model: "gemini-2.0-flash-001",
@@ -123,37 +171,130 @@ IMPORTANT: Be concise and insightful. Focus on business impact, not technical de
                         properties: {
                             executiveSummary: {
                                 type: Type.STRING,
-                                description: 'A concise 2-3 sentence executive summary focusing on strategy and expected business impact'
+                                description: '3-4 sentence executive summary with strategic overview'
                             },
                             strengths: {
                                 type: Type.ARRAY,
-                                description: 'List of 3-4 key strengths, each being a concise statement of competitive advantage',
+                                description: 'List of 5-7 key strengths with detailed competitive advantages',
                                 items: { type: Type.STRING }
                             },
                             opportunities: {
                                 type: Type.ARRAY,
-                                description: 'List of 3-4 growth opportunities with clear business value, avoiding technical jargon',
+                                description: 'List of 5-7 growth opportunities with specific business impact',
+                                items: { type: Type.STRING }
+                            },
+                            weaknesses: {
+                                type: Type.ARRAY,
+                                description: 'List of 3-5 weaknesses or areas of concern',
                                 items: { type: Type.STRING }
                             },
                             budgetAnalysis: {
                                 type: Type.STRING,
-                                description: 'A concise 2-3 sentence analysis of budget allocation effectiveness and any concerns'
+                                description: '3-4 sentence detailed budget effectiveness analysis'
+                            },
+                            budgetBreakdown: {
+                                type: Type.ARRAY,
+                                description: 'Budget breakdown by campaign type',
+                                items: {
+                                    type: Type.OBJECT,
+                                    properties: {
+                                        campaignType: { type: Type.STRING },
+                                        amount: { type: Type.NUMBER },
+                                        percentage: { type: Type.NUMBER }
+                                    }
+                                }
                             },
                             keywordStrategy: {
                                 type: Type.STRING,
-                                description: 'A concise 2-3 sentence assessment focusing on coverage and competitive positioning'
+                                description: '3-4 sentence in-depth keyword strategy assessment'
+                            },
+                            keywordMetrics: {
+                                type: Type.OBJECT,
+                                properties: {
+                                    totalKeywords: { type: Type.NUMBER },
+                                    assignedKeywords: { type: Type.NUMBER },
+                                    unassignedKeywords: { type: Type.NUMBER },
+                                    byIntent: {
+                                        type: Type.ARRAY,
+                                        items: {
+                                            type: Type.OBJECT,
+                                            properties: {
+                                                intent: { type: Type.STRING },
+                                                count: { type: Type.NUMBER },
+                                                percentage: { type: Type.NUMBER }
+                                            }
+                                        }
+                                    },
+                                    byMatchType: {
+                                        type: Type.ARRAY,
+                                        items: {
+                                            type: Type.OBJECT,
+                                            properties: {
+                                                matchType: { type: Type.STRING },
+                                                count: { type: Type.NUMBER },
+                                                percentage: { type: Type.NUMBER }
+                                            }
+                                        }
+                                    }
+                                }
                             },
                             campaignStructure: {
                                 type: Type.STRING,
-                                description: 'A concise 2-3 sentence evaluation of structure quality and any improvements needed'
+                                description: '3-4 sentence structural quality evaluation'
+                            },
+                            campaignMetrics: {
+                                type: Type.OBJECT,
+                                properties: {
+                                    byCampaignType: {
+                                        type: Type.ARRAY,
+                                        items: {
+                                            type: Type.OBJECT,
+                                            properties: {
+                                                type: { type: Type.STRING },
+                                                count: { type: Type.NUMBER },
+                                                avgBudget: { type: Type.NUMBER }
+                                            }
+                                        }
+                                    },
+                                    byTheme: {
+                                        type: Type.ARRAY,
+                                        items: {
+                                            type: Type.OBJECT,
+                                            properties: {
+                                                theme: { type: Type.STRING },
+                                                count: { type: Type.NUMBER }
+                                            }
+                                        }
+                                    }
+                                }
                             },
                             recommendations: {
                                 type: Type.ARRAY,
-                                description: 'List of 3-4 specific, prioritized actions with clear business benefit',
-                                items: { type: Type.STRING }
+                                description: 'List of 6-8 prioritized recommendations',
+                                items: {
+                                    type: Type.OBJECT,
+                                    properties: {
+                                        priority: { type: Type.STRING },
+                                        action: { type: Type.STRING },
+                                        impact: { type: Type.STRING },
+                                        effort: { type: Type.STRING }
+                                    }
+                                }
+                            },
+                            performanceProjections: {
+                                type: Type.OBJECT,
+                                properties: {
+                                    estimatedImpressions: { type: Type.STRING },
+                                    estimatedClicks: { type: Type.STRING },
+                                    estimatedConversions: { type: Type.STRING },
+                                    assumptions: {
+                                        type: Type.ARRAY,
+                                        items: { type: Type.STRING }
+                                    }
+                                }
                             }
                         },
-                        required: ['executiveSummary', 'strengths', 'opportunities', 'budgetAnalysis', 'keywordStrategy', 'campaignStructure', 'recommendations']
+                        required: ['executiveSummary', 'strengths', 'opportunities', 'weaknesses', 'budgetAnalysis', 'budgetBreakdown', 'keywordStrategy', 'keywordMetrics', 'campaignStructure', 'campaignMetrics', 'recommendations', 'performanceProjections']
                     }
                 }
             });
@@ -191,6 +332,364 @@ IMPORTANT: Be concise and insightful. Focus on business impact, not technical de
         } finally {
             setIsGenerating(false);
         }
+    };
+
+    const exportReportAsPDF = () => {
+        if (!reportInsights || !workspace) return;
+
+        const doc = new jsPDF('p', 'mm', 'a4');
+        const pageWidth = doc.internal.pageSize.getWidth();
+        const pageHeight = doc.internal.pageSize.getHeight();
+        let yPos = 20;
+
+        // Helper to check if we need a new page
+        const checkNewPage = (spaceNeeded: number) => {
+            if (yPos + spaceNeeded > pageHeight - 20) {
+                doc.addPage();
+                yPos = 20;
+                return true;
+            }
+            return false;
+        };
+
+        // Title
+        doc.setFontSize(24);
+        doc.setTextColor(102, 126, 234);
+        doc.text(`${workspace.brand} PPC Strategy Report`, pageWidth / 2, yPos, { align: 'center' });
+        yPos += 10;
+
+        doc.setFontSize(12);
+        doc.setTextColor(100, 100, 100);
+        doc.text('AI-Powered Campaign Analysis & Insights', pageWidth / 2, yPos, { align: 'center' });
+        yPos += 6;
+
+        doc.setFontSize(10);
+        doc.text(`Generated on ${new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}`, pageWidth / 2, yPos, { align: 'center' });
+        yPos += 15;
+
+        // Key Metrics Table
+        doc.setFontSize(14);
+        doc.setTextColor(102, 126, 234);
+        doc.text('Key Metrics', 14, yPos);
+        yPos += 8;
+
+        const totalCampaigns = workspace.campaigns.length;
+        const totalAdGroups = workspace.adGroups.length;
+        const totalKeywords = workspace.keywords.length;
+        const totalBudget = workspace.campaigns.reduce((sum, c) => sum + (c.budget || 0), 0);
+        const assignedKeywordsCount = new Set(
+            workspace.adGroups.flatMap(ag => (ag.keywords || []).map(k => k.id))
+        ).size;
+
+        autoTable(doc, {
+            startY: yPos,
+            head: [['Metric', 'Value']],
+            body: [
+                ['Total Campaigns', totalCampaigns.toString()],
+                ['Total Ad Groups', totalAdGroups.toString()],
+                ['Total Keywords', totalKeywords.toString()],
+                ['Daily Budget', `$${totalBudget.toFixed(2)}`],
+                ['Keyword Assignment Rate', `${totalKeywords > 0 ? ((assignedKeywordsCount / totalKeywords) * 100).toFixed(0) : 0}%`]
+            ],
+            theme: 'grid',
+            headStyles: { fillColor: [102, 126, 234] },
+            margin: { left: 14, right: 14 }
+        });
+        yPos = (doc as any).lastAutoTable.finalY + 10;
+
+        // Executive Summary
+        checkNewPage(30);
+        doc.setFontSize(14);
+        doc.setTextColor(102, 126, 234);
+        doc.text('Executive Summary', 14, yPos);
+        yPos += 8;
+
+        doc.setFontSize(10);
+        doc.setTextColor(60, 60, 60);
+        const summaryLines = doc.splitTextToSize(reportInsights.executiveSummary, pageWidth - 28);
+        doc.text(summaryLines, 14, yPos);
+        yPos += summaryLines.length * 5 + 10;
+
+        // Key Strengths
+        checkNewPage(30);
+        doc.setFontSize(14);
+        doc.setTextColor(102, 126, 234);
+        doc.text('Key Strengths', 14, yPos);
+        yPos += 8;
+
+        doc.setFontSize(10);
+        doc.setTextColor(60, 60, 60);
+        reportInsights.strengths.forEach((strength, idx) => {
+            checkNewPage(10);
+            const lines = doc.splitTextToSize(`${idx + 1}. ${strength}`, pageWidth - 28);
+            doc.text(lines, 14, yPos);
+            yPos += lines.length * 5 + 2;
+        });
+        yPos += 5;
+
+        // Growth Opportunities
+        checkNewPage(30);
+        doc.setFontSize(14);
+        doc.setTextColor(102, 126, 234);
+        doc.text('Growth Opportunities', 14, yPos);
+        yPos += 8;
+
+        doc.setFontSize(10);
+        doc.setTextColor(60, 60, 60);
+        reportInsights.opportunities.forEach((opportunity, idx) => {
+            checkNewPage(10);
+            const lines = doc.splitTextToSize(`${idx + 1}. ${opportunity}`, pageWidth - 28);
+            doc.text(lines, 14, yPos);
+            yPos += lines.length * 5 + 2;
+        });
+        yPos += 5;
+
+        // Weaknesses
+        checkNewPage(30);
+        doc.setFontSize(14);
+        doc.setTextColor(102, 126, 234);
+        doc.text('Areas for Improvement', 14, yPos);
+        yPos += 8;
+
+        doc.setFontSize(10);
+        doc.setTextColor(60, 60, 60);
+        reportInsights.weaknesses.forEach((weakness, idx) => {
+            checkNewPage(10);
+            const lines = doc.splitTextToSize(`${idx + 1}. ${weakness}`, pageWidth - 28);
+            doc.text(lines, 14, yPos);
+            yPos += lines.length * 5 + 2;
+        });
+        yPos += 5;
+
+        // Budget Analysis
+        checkNewPage(30);
+        doc.setFontSize(14);
+        doc.setTextColor(102, 126, 234);
+        doc.text('Budget Analysis', 14, yPos);
+        yPos += 8;
+
+        doc.setFontSize(10);
+        doc.setTextColor(60, 60, 60);
+        const budgetLines = doc.splitTextToSize(reportInsights.budgetAnalysis, pageWidth - 28);
+        doc.text(budgetLines, 14, yPos);
+        yPos += budgetLines.length * 5 + 10;
+
+        // Budget Breakdown Table
+        if (reportInsights.budgetBreakdown && reportInsights.budgetBreakdown.length > 0) {
+            checkNewPage(40);
+            autoTable(doc, {
+                startY: yPos,
+                head: [['Campaign Type', 'Budget', 'Percentage']],
+                body: reportInsights.budgetBreakdown.map(item => [
+                    item.campaignType,
+                    `$${item.amount.toFixed(2)}`,
+                    `${item.percentage.toFixed(1)}%`
+                ]),
+                theme: 'grid',
+                headStyles: { fillColor: [102, 126, 234] },
+                margin: { left: 14, right: 14 }
+            });
+            yPos = (doc as any).lastAutoTable.finalY + 10;
+        }
+
+        // Keyword Strategy
+        checkNewPage(30);
+        doc.setFontSize(14);
+        doc.setTextColor(102, 126, 234);
+        doc.text('Keyword Strategy', 14, yPos);
+        yPos += 8;
+
+        doc.setFontSize(10);
+        doc.setTextColor(60, 60, 60);
+        const keywordLines = doc.splitTextToSize(reportInsights.keywordStrategy, pageWidth - 28);
+        doc.text(keywordLines, 14, yPos);
+        yPos += keywordLines.length * 5 + 10;
+
+        // Keyword Metrics Tables
+        if (reportInsights.keywordMetrics) {
+            checkNewPage(40);
+            doc.setFontSize(12);
+            doc.setTextColor(102, 126, 234);
+            doc.text('Keyword Distribution by Intent', 14, yPos);
+            yPos += 6;
+
+            if (reportInsights.keywordMetrics.byIntent && reportInsights.keywordMetrics.byIntent.length > 0) {
+                autoTable(doc, {
+                    startY: yPos,
+                    head: [['Intent', 'Count', 'Percentage']],
+                    body: reportInsights.keywordMetrics.byIntent.map(item => [
+                        item.intent,
+                        item.count.toString(),
+                        `${item.percentage.toFixed(1)}%`
+                    ]),
+                    theme: 'grid',
+                    headStyles: { fillColor: [102, 126, 234] },
+                    margin: { left: 14, right: 14 }
+                });
+                yPos = (doc as any).lastAutoTable.finalY + 10;
+            }
+
+            checkNewPage(40);
+            doc.setFontSize(12);
+            doc.setTextColor(102, 126, 234);
+            doc.text('Keyword Distribution by Match Type', 14, yPos);
+            yPos += 6;
+
+            if (reportInsights.keywordMetrics.byMatchType && reportInsights.keywordMetrics.byMatchType.length > 0) {
+                autoTable(doc, {
+                    startY: yPos,
+                    head: [['Match Type', 'Count', 'Percentage']],
+                    body: reportInsights.keywordMetrics.byMatchType.map(item => [
+                        item.matchType,
+                        item.count.toString(),
+                        `${item.percentage.toFixed(1)}%`
+                    ]),
+                    theme: 'grid',
+                    headStyles: { fillColor: [102, 126, 234] },
+                    margin: { left: 14, right: 14 }
+                });
+                yPos = (doc as any).lastAutoTable.finalY + 10;
+            }
+        }
+
+        // Campaign Structure
+        checkNewPage(30);
+        doc.setFontSize(14);
+        doc.setTextColor(102, 126, 234);
+        doc.text('Campaign Structure', 14, yPos);
+        yPos += 8;
+
+        doc.setFontSize(10);
+        doc.setTextColor(60, 60, 60);
+        const campaignLines = doc.splitTextToSize(reportInsights.campaignStructure, pageWidth - 28);
+        doc.text(campaignLines, 14, yPos);
+        yPos += campaignLines.length * 5 + 10;
+
+        // Campaign Metrics Tables
+        if (reportInsights.campaignMetrics) {
+            if (reportInsights.campaignMetrics.byCampaignType && reportInsights.campaignMetrics.byCampaignType.length > 0) {
+                checkNewPage(40);
+                doc.setFontSize(12);
+                doc.setTextColor(102, 126, 234);
+                doc.text('Campaign Distribution by Type', 14, yPos);
+                yPos += 6;
+
+                autoTable(doc, {
+                    startY: yPos,
+                    head: [['Campaign Type', 'Count', 'Avg Budget']],
+                    body: reportInsights.campaignMetrics.byCampaignType.map(item => [
+                        item.type,
+                        item.count.toString(),
+                        `$${item.avgBudget.toFixed(2)}`
+                    ]),
+                    theme: 'grid',
+                    headStyles: { fillColor: [102, 126, 234] },
+                    margin: { left: 14, right: 14 }
+                });
+                yPos = (doc as any).lastAutoTable.finalY + 10;
+            }
+
+            if (reportInsights.campaignMetrics.byTheme && reportInsights.campaignMetrics.byTheme.length > 0) {
+                checkNewPage(40);
+                doc.setFontSize(12);
+                doc.setTextColor(102, 126, 234);
+                doc.text('Campaign Distribution by Theme', 14, yPos);
+                yPos += 6;
+
+                autoTable(doc, {
+                    startY: yPos,
+                    head: [['Theme', 'Count']],
+                    body: reportInsights.campaignMetrics.byTheme.map(item => [
+                        item.theme,
+                        item.count.toString()
+                    ]),
+                    theme: 'grid',
+                    headStyles: { fillColor: [102, 126, 234] },
+                    margin: { left: 14, right: 14 }
+                });
+                yPos = (doc as any).lastAutoTable.finalY + 10;
+            }
+        }
+
+        // Recommendations
+        checkNewPage(30);
+        doc.setFontSize(14);
+        doc.setTextColor(102, 126, 234);
+        doc.text('Recommendations', 14, yPos);
+        yPos += 8;
+
+        if (reportInsights.recommendations && reportInsights.recommendations.length > 0) {
+            autoTable(doc, {
+                startY: yPos,
+                head: [['Priority', 'Action', 'Impact', 'Effort']],
+                body: reportInsights.recommendations.map(rec => [
+                    rec.priority,
+                    rec.action,
+                    rec.impact,
+                    rec.effort
+                ]),
+                theme: 'grid',
+                headStyles: { fillColor: [102, 126, 234] },
+                margin: { left: 14, right: 14 },
+                columnStyles: {
+                    0: { cellWidth: 20 },
+                    1: { cellWidth: 80 },
+                    2: { cellWidth: 40 },
+                    3: { cellWidth: 30 }
+                }
+            });
+            yPos = (doc as any).lastAutoTable.finalY + 10;
+        }
+
+        // Performance Projections
+        if (reportInsights.performanceProjections) {
+            checkNewPage(30);
+            doc.setFontSize(14);
+            doc.setTextColor(102, 126, 234);
+            doc.text('Performance Projections', 14, yPos);
+            yPos += 8;
+
+            doc.setFontSize(10);
+            doc.setTextColor(60, 60, 60);
+            doc.text(`Estimated Impressions: ${reportInsights.performanceProjections.estimatedImpressions}`, 14, yPos);
+            yPos += 6;
+            doc.text(`Estimated Clicks: ${reportInsights.performanceProjections.estimatedClicks}`, 14, yPos);
+            yPos += 6;
+            doc.text(`Estimated Conversions: ${reportInsights.performanceProjections.estimatedConversions}`, 14, yPos);
+            yPos += 10;
+
+            if (reportInsights.performanceProjections.assumptions && reportInsights.performanceProjections.assumptions.length > 0) {
+                doc.setFontSize(11);
+                doc.text('Key Assumptions:', 14, yPos);
+                yPos += 6;
+                
+                doc.setFontSize(10);
+                reportInsights.performanceProjections.assumptions.forEach((assumption, idx) => {
+                    checkNewPage(8);
+                    const lines = doc.splitTextToSize(`• ${assumption}`, pageWidth - 28);
+                    doc.text(lines, 14, yPos);
+                    yPos += lines.length * 5 + 2;
+                });
+            }
+        }
+
+        // Footer on last page
+        const totalPages = (doc as any).internal.getNumberOfPages();
+        for (let i = 1; i <= totalPages; i++) {
+            doc.setPage(i);
+            doc.setFontSize(8);
+            doc.setTextColor(150, 150, 150);
+            doc.text(
+                'Generated by Good-Wit Commerce PPC Planner | AI-powered insights for data-driven decisions',
+                pageWidth / 2,
+                pageHeight - 10,
+                { align: 'center' }
+            );
+            doc.text(`Page ${i} of ${totalPages}`, pageWidth - 20, pageHeight - 10, { align: 'right' });
+        }
+
+        // Save the PDF
+        doc.save(`${workspace.brand.replace(/\s/g, '_')}_PPC_Report_${new Date().toISOString().split('T')[0]}.pdf`);
     };
 
     const exportReport = () => {
@@ -392,8 +891,15 @@ IMPORTANT: Be concise and insightful. Focus on business impact, not technical de
                                 <i className="fa-solid fa-eye-slash"></i> Hide Report
                             </button>
                             <button 
-                                onClick={exportReport}
+                                onClick={exportReportAsPDF}
                                 className="btn btn-success"
+                                style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}
+                            >
+                                <i className="fa-solid fa-file-pdf"></i> Export as PDF
+                            </button>
+                            <button 
+                                onClick={exportReport}
+                                className="btn btn-secondary"
                             >
                                 <i className="fa-solid fa-download"></i> Export as HTML
                             </button>
@@ -483,10 +989,45 @@ IMPORTANT: Be concise and insightful. Focus on business impact, not technical de
 
                             <div className="section">
                                 <h2>
+                                    <i className="fa-solid fa-triangle-exclamation"></i>
+                                    Areas for Improvement
+                                </h2>
+                                <ul>
+                                    {reportInsights.weaknesses.map((weakness, idx) => (
+                                        <li key={idx}>{weakness}</li>
+                                    ))}
+                                </ul>
+                            </div>
+
+                            <div className="section">
+                                <h2>
                                     <i className="fa-solid fa-dollar-sign"></i>
                                     Budget Analysis
                                 </h2>
                                 <p>{reportInsights.budgetAnalysis}</p>
+                                
+                                {reportInsights.budgetBreakdown && reportInsights.budgetBreakdown.length > 0 && (
+                                    <div style={{ marginTop: '1rem', overflowX: 'auto' }}>
+                                        <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '1rem' }}>
+                                            <thead>
+                                                <tr style={{ backgroundColor: '#667eea', color: 'white' }}>
+                                                    <th style={{ padding: '0.75rem', textAlign: 'left', border: '1px solid #ddd' }}>Campaign Type</th>
+                                                    <th style={{ padding: '0.75rem', textAlign: 'right', border: '1px solid #ddd' }}>Budget</th>
+                                                    <th style={{ padding: '0.75rem', textAlign: 'right', border: '1px solid #ddd' }}>Percentage</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {reportInsights.budgetBreakdown.map((item, idx) => (
+                                                    <tr key={idx} style={{ backgroundColor: idx % 2 === 0 ? '#f8f9fa' : 'white' }}>
+                                                        <td style={{ padding: '0.75rem', border: '1px solid #ddd' }}>{item.campaignType}</td>
+                                                        <td style={{ padding: '0.75rem', textAlign: 'right', border: '1px solid #ddd' }}>${item.amount.toFixed(2)}</td>
+                                                        <td style={{ padding: '0.75rem', textAlign: 'right', border: '1px solid #ddd' }}>{item.percentage.toFixed(1)}%</td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                )}
                             </div>
 
                             <div className="section">
@@ -495,6 +1036,62 @@ IMPORTANT: Be concise and insightful. Focus on business impact, not technical de
                                     Keyword Strategy
                                 </h2>
                                 <p>{reportInsights.keywordStrategy}</p>
+                                
+                                {reportInsights.keywordMetrics && (
+                                    <div style={{ marginTop: '1.5rem' }}>
+                                        <h3 style={{ fontSize: '1.1rem', marginBottom: '1rem', color: '#667eea' }}>Keyword Distribution</h3>
+                                        
+                                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', marginBottom: '1rem' }}>
+                                            {reportInsights.keywordMetrics.byIntent && reportInsights.keywordMetrics.byIntent.length > 0 && (
+                                                <div style={{ overflowX: 'auto' }}>
+                                                    <h4 style={{ fontSize: '0.95rem', marginBottom: '0.5rem' }}>By Intent</h4>
+                                                    <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                                                        <thead>
+                                                            <tr style={{ backgroundColor: '#667eea', color: 'white' }}>
+                                                                <th style={{ padding: '0.5rem', textAlign: 'left', border: '1px solid #ddd', fontSize: '0.85rem' }}>Intent</th>
+                                                                <th style={{ padding: '0.5rem', textAlign: 'right', border: '1px solid #ddd', fontSize: '0.85rem' }}>Count</th>
+                                                                <th style={{ padding: '0.5rem', textAlign: 'right', border: '1px solid #ddd', fontSize: '0.85rem' }}>%</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody>
+                                                            {reportInsights.keywordMetrics.byIntent.map((item, idx) => (
+                                                                <tr key={idx} style={{ backgroundColor: idx % 2 === 0 ? '#f8f9fa' : 'white' }}>
+                                                                    <td style={{ padding: '0.5rem', border: '1px solid #ddd', fontSize: '0.85rem' }}>{item.intent}</td>
+                                                                    <td style={{ padding: '0.5rem', textAlign: 'right', border: '1px solid #ddd', fontSize: '0.85rem' }}>{item.count}</td>
+                                                                    <td style={{ padding: '0.5rem', textAlign: 'right', border: '1px solid #ddd', fontSize: '0.85rem' }}>{item.percentage.toFixed(1)}%</td>
+                                                                </tr>
+                                                            ))}
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                            )}
+                                            
+                                            {reportInsights.keywordMetrics.byMatchType && reportInsights.keywordMetrics.byMatchType.length > 0 && (
+                                                <div style={{ overflowX: 'auto' }}>
+                                                    <h4 style={{ fontSize: '0.95rem', marginBottom: '0.5rem' }}>By Match Type</h4>
+                                                    <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                                                        <thead>
+                                                            <tr style={{ backgroundColor: '#667eea', color: 'white' }}>
+                                                                <th style={{ padding: '0.5rem', textAlign: 'left', border: '1px solid #ddd', fontSize: '0.85rem' }}>Match Type</th>
+                                                                <th style={{ padding: '0.5rem', textAlign: 'right', border: '1px solid #ddd', fontSize: '0.85rem' }}>Count</th>
+                                                                <th style={{ padding: '0.5rem', textAlign: 'right', border: '1px solid #ddd', fontSize: '0.85rem' }}>%</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody>
+                                                            {reportInsights.keywordMetrics.byMatchType.map((item, idx) => (
+                                                                <tr key={idx} style={{ backgroundColor: idx % 2 === 0 ? '#f8f9fa' : 'white' }}>
+                                                                    <td style={{ padding: '0.5rem', border: '1px solid #ddd', fontSize: '0.85rem' }}>{item.matchType}</td>
+                                                                    <td style={{ padding: '0.5rem', textAlign: 'right', border: '1px solid #ddd', fontSize: '0.85rem' }}>{item.count}</td>
+                                                                    <td style={{ padding: '0.5rem', textAlign: 'right', border: '1px solid #ddd', fontSize: '0.85rem' }}>{item.percentage.toFixed(1)}%</td>
+                                                                </tr>
+                                                            ))}
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                )}
                             </div>
 
                             <div className="section">
@@ -503,6 +1100,60 @@ IMPORTANT: Be concise and insightful. Focus on business impact, not technical de
                                     Campaign Structure
                                 </h2>
                                 <p>{reportInsights.campaignStructure}</p>
+                                
+                                {reportInsights.campaignMetrics && (
+                                    <div style={{ marginTop: '1.5rem' }}>
+                                        <h3 style={{ fontSize: '1.1rem', marginBottom: '1rem', color: '#667eea' }}>Campaign Distribution</h3>
+                                        
+                                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', marginBottom: '1rem' }}>
+                                            {reportInsights.campaignMetrics.byCampaignType && reportInsights.campaignMetrics.byCampaignType.length > 0 && (
+                                                <div style={{ overflowX: 'auto' }}>
+                                                    <h4 style={{ fontSize: '0.95rem', marginBottom: '0.5rem' }}>By Campaign Type</h4>
+                                                    <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                                                        <thead>
+                                                            <tr style={{ backgroundColor: '#667eea', color: 'white' }}>
+                                                                <th style={{ padding: '0.5rem', textAlign: 'left', border: '1px solid #ddd', fontSize: '0.85rem' }}>Type</th>
+                                                                <th style={{ padding: '0.5rem', textAlign: 'right', border: '1px solid #ddd', fontSize: '0.85rem' }}>Count</th>
+                                                                <th style={{ padding: '0.5rem', textAlign: 'right', border: '1px solid #ddd', fontSize: '0.85rem' }}>Avg Budget</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody>
+                                                            {reportInsights.campaignMetrics.byCampaignType.map((item, idx) => (
+                                                                <tr key={idx} style={{ backgroundColor: idx % 2 === 0 ? '#f8f9fa' : 'white' }}>
+                                                                    <td style={{ padding: '0.5rem', border: '1px solid #ddd', fontSize: '0.85rem' }}>{item.type}</td>
+                                                                    <td style={{ padding: '0.5rem', textAlign: 'right', border: '1px solid #ddd', fontSize: '0.85rem' }}>{item.count}</td>
+                                                                    <td style={{ padding: '0.5rem', textAlign: 'right', border: '1px solid #ddd', fontSize: '0.85rem' }}>${item.avgBudget.toFixed(2)}</td>
+                                                                </tr>
+                                                            ))}
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                            )}
+                                            
+                                            {reportInsights.campaignMetrics.byTheme && reportInsights.campaignMetrics.byTheme.length > 0 && (
+                                                <div style={{ overflowX: 'auto' }}>
+                                                    <h4 style={{ fontSize: '0.95rem', marginBottom: '0.5rem' }}>By Theme</h4>
+                                                    <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                                                        <thead>
+                                                            <tr style={{ backgroundColor: '#667eea', color: 'white' }}>
+                                                                <th style={{ padding: '0.5rem', textAlign: 'left', border: '1px solid #ddd', fontSize: '0.85rem' }}>Theme</th>
+                                                                <th style={{ padding: '0.5rem', textAlign: 'right', border: '1px solid #ddd', fontSize: '0.85rem' }}>Count</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody>
+                                                            {reportInsights.campaignMetrics.byTheme.map((item, idx) => (
+                                                                <tr key={idx} style={{ backgroundColor: idx % 2 === 0 ? '#f8f9fa' : 'white' }}>
+                                                                    <td style={{ padding: '0.5rem', border: '1px solid #ddd', fontSize: '0.85rem' }}>{item.theme}</td>
+                                                                    <td style={{ padding: '0.5rem', textAlign: 'right', border: '1px solid #ddd', fontSize: '0.85rem' }}>{item.count}</td>
+                                                                </tr>
+                                                            ))}
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                )}
                             </div>
 
                             <div className="section">
@@ -510,12 +1161,84 @@ IMPORTANT: Be concise and insightful. Focus on business impact, not technical de
                                     <i className="fa-solid fa-bullseye"></i>
                                     Recommendations
                                 </h2>
-                                <ul>
-                                    {reportInsights.recommendations.map((recommendation, idx) => (
-                                        <li key={idx}>{recommendation}</li>
-                                    ))}
-                                </ul>
+                                {reportInsights.recommendations && reportInsights.recommendations.length > 0 && (
+                                    <div style={{ overflowX: 'auto' }}>
+                                        <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '1rem' }}>
+                                            <thead>
+                                                <tr style={{ backgroundColor: '#667eea', color: 'white' }}>
+                                                    <th style={{ padding: '0.75rem', textAlign: 'left', border: '1px solid #ddd' }}>Priority</th>
+                                                    <th style={{ padding: '0.75rem', textAlign: 'left', border: '1px solid #ddd' }}>Action</th>
+                                                    <th style={{ padding: '0.75rem', textAlign: 'left', border: '1px solid #ddd' }}>Impact</th>
+                                                    <th style={{ padding: '0.75rem', textAlign: 'left', border: '1px solid #ddd' }}>Effort</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {reportInsights.recommendations.map((rec, idx) => (
+                                                    <tr key={idx} style={{ backgroundColor: idx % 2 === 0 ? '#f8f9fa' : 'white' }}>
+                                                        <td style={{ padding: '0.75rem', border: '1px solid #ddd' }}>
+                                                            <span style={{ 
+                                                                padding: '0.25rem 0.5rem', 
+                                                                borderRadius: '4px', 
+                                                                fontSize: '0.85rem',
+                                                                fontWeight: 'bold',
+                                                                backgroundColor: rec.priority === 'High' ? '#ff6b6b' : rec.priority === 'Medium' ? '#ffa500' : '#95e1d3',
+                                                                color: 'white'
+                                                            }}>
+                                                                {rec.priority}
+                                                            </span>
+                                                        </td>
+                                                        <td style={{ padding: '0.75rem', border: '1px solid #ddd' }}>{rec.action}</td>
+                                                        <td style={{ padding: '0.75rem', border: '1px solid #ddd' }}>{rec.impact}</td>
+                                                        <td style={{ padding: '0.75rem', border: '1px solid #ddd' }}>{rec.effort}</td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                )}
                             </div>
+
+                            {reportInsights.performanceProjections && (
+                                <div className="section">
+                                    <h2>
+                                        <i className="fa-solid fa-chart-line"></i>
+                                        Performance Projections
+                                    </h2>
+                                    <div style={{ marginTop: '1rem' }}>
+                                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem', marginBottom: '1.5rem' }}>
+                                            <div style={{ padding: '1rem', backgroundColor: '#f8f9fa', borderRadius: '8px', border: '2px solid #667eea' }}>
+                                                <div style={{ fontSize: '0.85rem', color: '#777', marginBottom: '0.5rem' }}>Estimated Impressions</div>
+                                                <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#667eea' }}>
+                                                    {reportInsights.performanceProjections.estimatedImpressions}
+                                                </div>
+                                            </div>
+                                            <div style={{ padding: '1rem', backgroundColor: '#f8f9fa', borderRadius: '8px', border: '2px solid #667eea' }}>
+                                                <div style={{ fontSize: '0.85rem', color: '#777', marginBottom: '0.5rem' }}>Estimated Clicks</div>
+                                                <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#667eea' }}>
+                                                    {reportInsights.performanceProjections.estimatedClicks}
+                                                </div>
+                                            </div>
+                                            <div style={{ padding: '1rem', backgroundColor: '#f8f9fa', borderRadius: '8px', border: '2px solid #667eea' }}>
+                                                <div style={{ fontSize: '0.85rem', color: '#777', marginBottom: '0.5rem' }}>Estimated Conversions</div>
+                                                <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#667eea' }}>
+                                                    {reportInsights.performanceProjections.estimatedConversions}
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
+                                        {reportInsights.performanceProjections.assumptions && reportInsights.performanceProjections.assumptions.length > 0 && (
+                                            <div>
+                                                <h4 style={{ fontSize: '1rem', marginBottom: '0.5rem', color: '#667eea' }}>Key Assumptions</h4>
+                                                <ul style={{ listStyle: 'disc', paddingLeft: '1.5rem' }}>
+                                                    {reportInsights.performanceProjections.assumptions.map((assumption, idx) => (
+                                                        <li key={idx} style={{ marginBottom: '0.5rem', color: '#555' }}>{assumption}</li>
+                                                    ))}
+                                                </ul>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            )}
                         </div>
 
                         <div className="report-footer">
