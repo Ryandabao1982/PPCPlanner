@@ -23,64 +23,204 @@ interface AdGroupTemplate {
 
 const CAMPAIGN_TEMPLATES: CampaignTemplate[] = [
     {
-        id: 'research-auto',
-        name: 'Research Discovery',
-        description: 'Auto campaign for discovering new keywords and customer search terms',
-        playbook: 'SP | Auto | Research',
+        id: 'sp-auto-research',
+        name: 'SP | Auto | Research',
+        description: 'Auto campaign for discovering new keywords and customer search terms. Budget: 5-10% of total.',
+        playbook: 'SP_AUTO_RESEARCH',
         budget: 20,
         tosPlacement: 0,
         productPlacement: 0,
         category: 'Research'
     },
     {
-        id: 'branded-exact',
-        name: 'Branded Defense',
-        description: 'Exact match branded campaign to protect brand terms',
-        playbook: 'SP | Exact | Branded',
-        budget: 25,
-        tosPlacement: 20,
-        productPlacement: 10,
-        category: 'Branded'
-    },
-    {
-        id: 'competitor-exact',
-        name: 'Competitor Conquest',
-        description: 'Target competitor brand terms with exact match',
-        playbook: 'SP | Exact | Competitor',
-        budget: 40,
-        tosPlacement: 15,
-        productPlacement: 5,
-        category: 'Competitor'
-    },
-    {
-        id: 'generic-broad',
-        name: 'Generic Broad Research',
-        description: 'Broad match for category research and discovery',
-        playbook: 'SP | Broad | Research',
-        budget: 50,
+        id: 'sp-broad-research',
+        name: 'SP | Broad | Research',
+        description: 'Broad match for keyword discovery. Max 50 keywords per ad group. Budget: 10-15%.',
+        playbook: 'SP_BROAD_RESEARCH',
+        budget: 30,
         tosPlacement: 0,
         productPlacement: 0,
         category: 'Research'
     },
     {
-        id: 'performance-exact',
-        name: 'Performance Campaigns',
-        description: 'Exact match campaigns for proven high-performing keywords',
-        playbook: 'SP | Exact | Performance',
+        id: 'sp-phrase-research',
+        name: 'SP | Phrase | Research',
+        description: 'Phrase match for discovery while maintaining relevance. Max 50 keywords per ad group.',
+        playbook: 'SP_PHRASE_RESEARCH',
+        budget: 30,
+        tosPlacement: 0,
+        productPlacement: 0,
+        category: 'Research'
+    },
+    {
+        id: 'sp-exact-performance',
+        name: 'SP | Exact | Performance',
+        description: 'Exact match campaigns for proven high-performing keywords. Max 15 keywords per ad group. TOS modifier: +20%.',
+        playbook: 'SP_EXACT_PERFORMANCE',
         budget: 60,
-        tosPlacement: 25,
-        productPlacement: 15,
+        tosPlacement: 20,
+        productPlacement: 0,
         category: 'Performance'
     },
     {
-        id: 'product-targeting',
-        name: 'Product Targeting',
-        description: 'Target competitor products and similar ASINs',
-        playbook: 'SP | Product Targeting | Competitor ASINs',
-        budget: 35,
-        tosPlacement: 10,
+        id: 'sp-exact-skag',
+        name: 'SP | Exact | SKAG',
+        description: 'Single Keyword Ad Groups for maximum control. 1 keyword per ad group. TOS modifier: +30%.',
+        playbook: 'SP_EXACT_SKAG',
+        budget: 25,
+        tosPlacement: 30,
+        productPlacement: 0,
+        category: 'Performance'
+    },
+    {
+        id: 'sp-branded',
+        name: 'SP | Branded | Defense',
+        description: 'Protect brand terms with Exact + Phrase match. Budget ≤ 10%.',
+        playbook: 'SP_BRANDED_UMBRELLA',
+        budget: 25,
+        tosPlacement: 50,
+        productPlacement: 0,
+        category: 'Branded'
+    },
+    {
+        id: 'sp-competitor-exact',
+        name: 'SP | Exact | Competitor',
+        description: 'Target competitor brand terms with exact match.',
+        playbook: 'SP_EXACT_COMP',
+        budget: 40,
+        tosPlacement: 15,
+        productPlacement: 0,
+        category: 'Competitor'
+    },
+    {
+        id: 'sp-pt-branded',
+        name: 'SP | Product Targeting | Branded',
+        description: 'Defend your own product detail pages by showing ads on your product pages.',
+        playbook: 'SP_PT_BRANDED',
+        budget: 20,
+        tosPlacement: 0,
         productPlacement: 20,
         category: 'Product Targeting'
+    },
+    {
+        id: 'sp-pt-competitor',
+        name: 'SP | Product Targeting | Competitor',
+        description: 'Target competitor product detail pages to capture their traffic.',
+        playbook: 'SP_PT_COMP_ASIN',
+        budget: 35,
+        tosPlacement: 0,
+        productPlacement: 25,
+        category: 'Product Targeting'
+    },
+    {
+        id: 'sp-pt-category',
+        name: 'SP | Product Targeting | Category',
+        description: 'Target entire categories to reach broad but relevant audiences.',
+        playbook: 'SP_PT_CATEGORY',
+        budget: 25,
+        tosPlacement: 0,
+        productPlacement: 15,
+        category: 'Product Targeting'
+    },
+    {
+        id: 'sp-pt-crosssell',
+        name: 'SP | Product Targeting | Cross-Sell',
+        description: 'Target complementary products to encourage bundle purchases.',
+        playbook: 'SP_PT_CROSSELL',
+        budget: 25,
+        tosPlacement: 0,
+        productPlacement: 15,
+        category: 'Product Targeting'
+    },
+    {
+        id: 'sb-exact-branded',
+        name: 'SB | Exact | Branded',
+        description: 'Dominate top of search for brand terms. Requires creative asset.',
+        playbook: 'SB_EXACT_BRANDED',
+        budget: 30,
+        tosPlacement: 15,
+        productPlacement: 0,
+        category: 'Sponsored Brands'
+    },
+    {
+        id: 'sb-exact-comp',
+        name: 'SB | Exact | Competitor',
+        description: 'Showcase your brand when customers search for competitors. Requires creative.',
+        playbook: 'SB_EXACT_COMP',
+        budget: 30,
+        tosPlacement: 10,
+        productPlacement: 0,
+        category: 'Sponsored Brands'
+    },
+    {
+        id: 'sb-broad-research',
+        name: 'SB | Broad | Research',
+        description: 'Broad-term keyword discovery for brand awareness. Requires creative.',
+        playbook: 'SB_BROAD_RESEARCH',
+        budget: 25,
+        tosPlacement: 0,
+        productPlacement: 0,
+        category: 'Sponsored Brands'
+    },
+    {
+        id: 'sb-video-awareness',
+        name: 'SB | Video | Awareness',
+        description: 'Video campaigns for brand awareness. Must use video creative.',
+        playbook: 'SB_VIDEO_AWARENESS',
+        budget: 30,
+        tosPlacement: 0,
+        productPlacement: 0,
+        category: 'Sponsored Brands'
+    },
+    {
+        id: 'sb-store-traffic',
+        name: 'SB | Store | Traffic',
+        description: 'Drive traffic to Amazon Brand Store. Requires Brand Store link.',
+        playbook: 'SB_STORE_TRAFFIC',
+        budget: 25,
+        tosPlacement: 0,
+        productPlacement: 0,
+        category: 'Sponsored Brands'
+    },
+    {
+        id: 'sd-remarketing-views',
+        name: 'SD | Remarketing | Product Views',
+        description: 'Retarget shoppers who viewed products but did not purchase.',
+        playbook: 'SD_REMARKETING_VIEWS',
+        budget: 20,
+        tosPlacement: 0,
+        productPlacement: 0,
+        category: 'Sponsored Display'
+    },
+    {
+        id: 'sd-remarketing-cart',
+        name: 'SD | Remarketing | Cart',
+        description: 'Target high-intent shoppers who added to cart but did not purchase.',
+        playbook: 'SD_REMARKETING_CART',
+        budget: 25,
+        tosPlacement: 0,
+        productPlacement: 0,
+        category: 'Sponsored Display'
+    },
+    {
+        id: 'sd-audience-inmarket',
+        name: 'SD | Audience | In-Market',
+        description: 'Reach shoppers actively browsing your product category.',
+        playbook: 'SD_AUDIENCE_INMARKET',
+        budget: 15,
+        tosPlacement: 0,
+        productPlacement: 0,
+        category: 'Sponsored Display'
+    },
+    {
+        id: 'sd-pt-competitor',
+        name: 'SD | Product Targeting | Competitor',
+        description: 'Target competitor product detail pages with display ads.',
+        playbook: 'SD_PT_COMP',
+        budget: 20,
+        tosPlacement: 0,
+        productPlacement: 0,
+        category: 'Sponsored Display'
     }
 ];
 
