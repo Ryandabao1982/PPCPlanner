@@ -113,9 +113,10 @@ Create a CONCISE, HIGH-IMPACT report with:
 
 IMPORTANT: Be concise and insightful. Focus on business impact, not technical details. Use clear, direct language a brand executive would understand and value.`;
 
-            const model = ai.getGenerativeModel({ 
-                model: "gemini-2.5-flash",
-                generationConfig: {
+            const response = await ai.models.generateContent({
+                model: "gemini-2.0-flash-001",
+                contents: prompt,
+                config: {
                     responseMimeType: "application/json",
                     responseSchema: {
                         type: Type.OBJECT,
@@ -156,8 +157,6 @@ IMPORTANT: Be concise and insightful. Focus on business impact, not technical de
                     }
                 }
             });
-            
-            const response = await model.generateContent(prompt);
 
             const insights = JSON.parse(response.text);
             setReportInsights(insights);
