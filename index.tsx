@@ -4,7 +4,7 @@ import { createRoot } from 'react-dom/client';
 import { styles } from './styles';
 import { useLocalStorage } from './hooks/useLocalStorage';
 import { SAMPLE_SEARCH_QUERY_DATA } from './utils/constants';
-import { generateBulkUploadXlsx } from './utils/helpers';
+import { generateBulkUploadXlsx, exportWorkspaceData, importWorkspaceData } from './utils/helpers';
 import { initialDatabase } from './database';
 import { getCurrentUser, saveUser, updateLastVisit, clearUser, isUserLoggedIn, User } from './utils/userLogger';
 
@@ -308,6 +308,77 @@ const App = () => {
         }
       }
       showToast(`Brand "${brandName}" deleted.`, 'info');
+  };
+
+  const handleExportWorkspaceData = () => {
+      try {
+          exportWorkspaceData(workspaces);
+          const username = currentUser?.username || 'Unknown User';
+          if (activeWorkspaceId) {
+              const newLog = { id: Date.now(), timestamp: new Date().toISOString(), action: 'Exported all workspace data', user: username };
+              setWorkspaces(prev => {
+                  const currentWorkspace = prev[activeWorkspaceId];
+                  if (!currentWorkspace) return prev;
+                  const newLogs = [newLog, ...(currentWorkspace.logs || [])].slice(0, 50);
+                  return {
+                      ...prev,
+                      [activeWorkspaceId]: {
+                          ...currentWorkspace,
+                          logs: newLogs,
+                      }
+                  };
+              });
+          }
+          showToast('Workspace data exported successfully!', 'success');
+      } catch (error) {
+          console.error('Export failed:', error);
+          showToast('Failed to export data. Please try again.', 'error');
+      }
+  };
+
+  const handleImportWorkspaceData = async (file: File) => {
+      try {
+          const importedData = await importWorkspaceData(file);
+          
+          if (typeof importedData !== 'object' || importedData === null) {
+              showToast('Invalid data format. Please select a valid PPC Planner data file.', 'error');
+              return;
+          }
+
+          const confirm = window.confirm(
+              'Importing data will replace all current workspaces. This action cannot be undone. Do you want to continue?'
+          );
+          
+          if (!confirm) {
+              showToast('Import cancelled.', 'info');
+              return;
+          }
+
+          const username = currentUser?.username || 'Unknown User';
+          const workspaceCount = Object.keys(importedData).length;
+          const newLog = { id: Date.now(), timestamp: new Date().toISOString(), action: `Imported ${workspaceCount} workspace(s) from file`, user: username };
+          
+          // Add log entry to the first workspace
+          const firstWorkspaceId = Object.keys(importedData)[0];
+          if (firstWorkspaceId) {
+              const firstWorkspace = importedData[firstWorkspaceId];
+              const newLogs = [newLog, ...(firstWorkspace.logs || [])].slice(0, 50);
+              importedData[firstWorkspaceId] = {
+                  ...firstWorkspace,
+                  logs: newLogs,
+              };
+          }
+          
+          setWorkspaces(importedData);
+          if (firstWorkspaceId) {
+              setActiveWorkspaceId(firstWorkspaceId);
+          }
+          
+          showToast(`Successfully imported ${workspaceCount} workspace(s)!`, 'success');
+      } catch (error) {
+          console.error('Import failed:', error);
+          showToast(error.message || 'Failed to import data. Please check the file and try again.', 'error');
+      }
   };
 
   const createHandler = (key: string, logMessage: string, item: any) => {
@@ -938,7 +1009,7 @@ const App = () => {
         <main className="main-content">
             <header className="main-header">
                 <h1>{headerTitle}</h1>
-                {activeView !== 'HELP' && <WorkspaceManager workspaces={workspaces} activeWorkspaceId={activeWorkspaceId} onSelect={setActiveWorkspaceId} onCreate={handleCreateBrand} onDelete={handleDeleteWorkspace} />}
+                {activeView !== 'HELP' && <WorkspaceManager workspaces={workspaces} activeWorkspaceId={activeWorkspaceId} onSelect={setActiveWorkspaceId} onCreate={handleCreateBrand} onDelete={handleDeleteWorkspace} onExportData={handleExportWorkspaceData} onImportData={handleImportWorkspaceData} />}
             </header>
             <div className="content-area">
               {renderContent()}
