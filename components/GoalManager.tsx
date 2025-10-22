@@ -245,7 +245,7 @@ export const GoalManager: React.FC<GoalManagerProps> = ({ goals, campaigns, onAd
                                 onClick={() => setShowTemplates(true)}
                                 disabled={disabled || campaigns.length === 0}
                             >
-                                <i className="fa-solid fa-magic" style={{ marginRight: '0.5rem' }}></i>
+                                <i className="fa-solid fa-wand-magic-sparkles" style={{ marginRight: '0.5rem' }}></i>
                                 Browse Goal Templates
                             </button>
                         </div>
