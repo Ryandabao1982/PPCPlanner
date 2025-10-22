@@ -62,7 +62,13 @@ export const PlanReportGenerator: React.FC<PlanReportGeneratorProps> = ({
             // SECURITY NOTE: API key is exposed in client-side code.
             // For production use, move AI API calls to a secure backend service to protect credentials.
             // This client-side implementation is for demonstration purposes only.
-            const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+            const apiKey = process.env.API_KEY;
+            
+            if (!apiKey || apiKey === 'undefined') {
+                throw new Error('API key is not configured. Please set the GEMINI_API_KEY environment variable.');
+            }
+            
+            const ai = new GoogleGenAI({ apiKey });
 
             // Prepare data summary for AI analysis
             const totalCampaigns = workspace.campaigns.length;
@@ -330,7 +336,19 @@ IMPORTANT: Provide detailed, actionable insights with specific numbers and perce
                 }
             });
 
-            const insights = JSON.parse(response.text);
+            // Safely parse the JSON response with error handling
+            let insights;
+            try {
+                const responseText = response.text?.trim();
+                if (!responseText) {
+                    throw new Error('Empty response from AI service');
+                }
+                insights = JSON.parse(responseText);
+            } catch (parseError) {
+                console.error("JSON parsing error:", parseError);
+                throw new Error(`Failed to parse AI response: ${parseError instanceof Error ? parseError.message : 'Invalid JSON format'}`);
+            }
+            
             setReportInsights(insights);
             setShowReport(true);
             

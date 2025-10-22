@@ -73,7 +73,14 @@ export const KeywordBank: React.FC<KeywordBankProps> = ({ keywords, onAdd, onUpd
         setNegativeCandidates([]); // Clear previous candidates
         
         try {
-            const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+            const apiKey = process.env.API_KEY;
+            
+            if (!apiKey || apiKey === 'undefined') {
+                showToast("API key is not configured. Please set the GEMINI_API_KEY environment variable.", "error");
+                return;
+            }
+            
+            const ai = new GoogleGenAI({ apiKey });
             const exclusionListString = EXCLUSION_WORD_LIST.join(', ');
 
             const response = await ai.models.generateContent({
@@ -123,8 +130,18 @@ RULES:
                 }
             });
             
-            const jsonStr = response.text.trim();
-            const parsedResponse = JSON.parse(jsonStr);
+            // Safely parse the JSON response with error handling
+            let parsedResponse;
+            try {
+                const jsonStr = response.text?.trim();
+                if (!jsonStr) {
+                    throw new Error('Empty response from AI service');
+                }
+                parsedResponse = JSON.parse(jsonStr);
+            } catch (parseError) {
+                console.error("JSON parsing error:", parseError);
+                throw new Error(`Failed to parse AI response: ${parseError instanceof Error ? parseError.message : 'Invalid JSON format'}`);
+            }
 
             if (parsedResponse.suggestedKeywords && Array.isArray(parsedResponse.suggestedKeywords)) {
                 const newSuggestions = parsedResponse.suggestedKeywords.map((k: any) => ({ 
