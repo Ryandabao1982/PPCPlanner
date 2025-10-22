@@ -33,6 +33,8 @@ export const ProductAssigner: React.FC<ProductAssignerProps> = ({ products, adGr
     const [searchFilter, setSearchFilter] = useState('');
     const [selectedAvailable, setSelectedAvailable] = useState<number[]>([]);
     const [selectedAssigned, setSelectedAssigned] = useState<number[]>([]);
+    const [showQuickAdd, setShowQuickAdd] = useState(false);
+    const [quickAddInput, setQuickAddInput] = useState('');
 
     useEffect(() => {
         if (adGroups.length > 0 && !adGroups.some(ag => ag.id === selectedAdGroupId)) {
@@ -123,6 +125,58 @@ export const ProductAssigner: React.FC<ProductAssignerProps> = ({ products, adGr
         return <span className="sort-indicator active">{currentSortConfig.direction === 'ascending' ? '▲' : '▼'}</span>;
     };
 
+    const handleQuickAdd = () => {
+        const searchTerms = quickAddInput
+            .split(/[\n,]+/)
+            .map(term => term.trim().toUpperCase())
+            .filter(term => term);
+
+        if (searchTerms.length === 0) return;
+
+        // Find products that match any of the search terms (by SKU or ASIN)
+        const matchedProducts = advertisableProducts.filter(p => 
+            searchTerms.some(term => 
+                p.sku.toUpperCase().includes(term) || 
+                p.asin.toUpperCase().includes(term)
+            ) && !selectedAdGroupProductIds.has(p.id)
+        );
+
+        if (matchedProducts.length > 0) {
+            onBulkAssign(matchedProducts.map(p => p.id), Number(selectedAdGroupId));
+            setQuickAddInput('');
+            setShowQuickAdd(false);
+        }
+    };
+
+    const parseQuickAddTerms = (text: string): { found: number, notFound: string[] } => {
+        const searchTerms = text
+            .split(/[\n,]+/)
+            .map(term => term.trim().toUpperCase())
+            .filter(term => term);
+
+        if (searchTerms.length === 0) return { found: 0, notFound: [] };
+
+        const matchedProducts = advertisableProducts.filter(p => 
+            searchTerms.some(term => 
+                p.sku.toUpperCase().includes(term) || 
+                p.asin.toUpperCase().includes(term)
+            ) && !selectedAdGroupProductIds.has(p.id)
+        );
+
+        const matchedTerms = new Set(
+            matchedProducts.flatMap(p => 
+                searchTerms.filter(term => 
+                    p.sku.toUpperCase().includes(term) || 
+                    p.asin.toUpperCase().includes(term)
+                )
+            )
+        );
+
+        const notFound = searchTerms.filter(term => !matchedTerms.has(term));
+
+        return { found: matchedProducts.length, notFound };
+    };
+
     return (
         <div className="section">
             <h2>Product Assigner</h2>
@@ -137,6 +191,85 @@ export const ProductAssigner: React.FC<ProductAssignerProps> = ({ products, adGr
                         ))}
                     </select>
                 </div>
+
+                {selectedAdGroupId && (
+                    <div style={{ marginBottom: '1rem' }}>
+                        <button 
+                            className="button" 
+                            onClick={() => setShowQuickAdd(!showQuickAdd)} 
+                            disabled={disabled}
+                        >
+                            <i className="fa-solid fa-bolt"></i> Quick Add Products
+                        </button>
+                    </div>
+                )}
+
+                {selectedAdGroupId && showQuickAdd && (
+                    <div style={{ 
+                        marginBottom: '1.5rem', 
+                        padding: '1.5rem', 
+                        background: 'var(--bg-secondary)', 
+                        border: '1px solid var(--border-color)',
+                        borderRadius: '4px'
+                    }}>
+                        <h3 style={{ fontSize: '1rem', marginBottom: '1rem' }}>
+                            <i className="fa-solid fa-bolt"></i> Quick Add by SKU or ASIN
+                        </h3>
+                        <div className="form-group">
+                            <label>Enter SKUs or ASINs (one per line or comma-separated)</label>
+                            <textarea 
+                                value={quickAddInput}
+                                onChange={e => setQuickAddInput(e.target.value)}
+                                placeholder="MYSKU-001&#10;B0ABC123DE&#10;MYSKU-002, B0XYZ789GH"
+                                disabled={disabled}
+                                rows={5}
+                                style={{ fontFamily: 'monospace', fontSize: '0.9rem' }}
+                            />
+                            {quickAddInput && (
+                                <small style={{ display: 'block', marginTop: '0.5rem' }}>
+                                    {(() => {
+                                        const { found, notFound } = parseQuickAddTerms(quickAddInput);
+                                        return (
+                                            <>
+                                                <span style={{ color: 'var(--success-color)' }}>
+                                                    {found} product{found !== 1 ? 's' : ''} found
+                                                </span>
+                                                {notFound.length > 0 && (
+                                                    <>
+                                                        {' | '}
+                                                        <span style={{ color: 'var(--warning-color)' }}>
+                                                            {notFound.length} not found: {notFound.slice(0, 3).join(', ')}
+                                                            {notFound.length > 3 && '...'}
+                                                        </span>
+                                                    </>
+                                                )}
+                                            </>
+                                        );
+                                    })()}
+                                </small>
+                            )}
+                        </div>
+                        <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
+                            <button 
+                                className="delete-button"
+                                onClick={() => {
+                                    setQuickAddInput('');
+                                    setShowQuickAdd(false);
+                                }}
+                                disabled={disabled}
+                            >
+                                Cancel
+                            </button>
+                            <button 
+                                className="button"
+                                onClick={handleQuickAdd}
+                                disabled={disabled || parseQuickAddTerms(quickAddInput).found === 0}
+                            >
+                                Add {parseQuickAddTerms(quickAddInput).found} Product{parseQuickAddTerms(quickAddInput).found !== 1 ? 's' : ''}
+                            </button>
+                        </div>
+                    </div>
+                )}
                 
                 <div className="assigner-grid" style={{marginTop: '1.5rem'}}>
                     <div>
