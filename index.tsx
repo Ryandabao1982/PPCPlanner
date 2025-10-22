@@ -27,6 +27,7 @@ import { SearchQueryReport } from './components/SearchQueryReport';
 import { DocumentationViewer } from './components/Documentation';
 import { PlanVisualizer } from './components/PlanVisualizer';
 import { UserLoginModal } from './components/UserLoginModal';
+import { AICampaignSetup } from './components/AICampaignSetup';
 
 type View = 'DASHBOARD' | 'CAMPAIGNS' | 'AD_GROUPS' | 'KEYWORDS' | 'ASSETS' | 'GOALS' | 'BIDDING' | 'REPORTS' | 'HELP';
 type ToastType = 'success' | 'error' | 'info' | 'warning';
@@ -143,6 +144,7 @@ const App = () => {
   const [animatedItem, setAnimatedItem] = useState<AnimatedItem>({ key: '', id: null });
   const [activeKeywordTab, setActiveKeywordTab] = useState('bank');
   const [activeAssetTab, setActiveAssetTab] = useState('bank');
+  const [activeCampaignTab, setActiveCampaignTab] = useState('manual');
   const [targetedAdGroupId, setTargetedAdGroupId] = useState<number | null>(null);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [showLoginModal, setShowLoginModal] = useState(false);
@@ -438,6 +440,34 @@ const App = () => {
         };
     });
 };
+
+  const handleApplyAIPlan = (newCampaigns: any[], newAdGroups: any[]) => {
+    if (!activeWorkspaceId) return;
+
+    const logAction = `Applied AI campaign plan: Created ${newCampaigns.length} campaigns with ${newAdGroups.length} ad groups`;
+    const username = currentUser?.username || 'Unknown User';
+    const newLog = { id: Date.now(), timestamp: new Date().toISOString(), action: logAction, user: username };
+
+    showToast(`AI Plan applied: ${newCampaigns.length} campaigns created!`, 'success');
+
+    setWorkspaces(prev => {
+        const currentWorkspace = prev[activeWorkspaceId];
+        if (!currentWorkspace) return prev;
+
+        return {
+            ...prev,
+            [activeWorkspaceId]: {
+                ...currentWorkspace,
+                campaigns: [...currentWorkspace.campaigns, ...newCampaigns],
+                adGroups: [...currentWorkspace.adGroups, ...newAdGroups],
+                logs: [newLog, ...(currentWorkspace.logs || [])].slice(0, 50),
+            }
+        };
+    });
+
+    // Switch to manual tab to see the created campaigns
+    setActiveCampaignTab('manual');
+  };
 
   const updateHandler = (key: string, logMessage: string, id: number, updates: any) => {
       if (!activeWorkspaceId) return;
@@ -893,26 +923,45 @@ const App = () => {
                 </div>
             );
         case 'CAMPAIGNS':
+            const campaignTabs = [
+                { id: 'manual', label: 'Manual Setup' },
+                { id: 'ai', label: 'AI Setup' },
+            ];
             return (
-                <div className="campaign-view-grid">
-                    <CampaignCreator 
-                        onAddCampaignFromPlaybook={handleCreateCampaignFromPlaybook}
-                        campaigns={activeWorkspace.campaigns} 
-                        products={activeWorkspace.products}
-                        disabled={isFrozen} 
-                        workspaceBrand={activeWorkspace.brand} 
-                    />
-                    <CampaignHierarchy 
-                        campaigns={activeWorkspace.campaigns} 
-                        adGroups={activeWorkspace.adGroups}
-                        onUpdate={(id, u) => updateHandler('campaigns', 'Updated campaign', id, u)} 
-                        onDelete={handleDeleteCampaign} 
-                        disabled={isFrozen} 
-                        animatedItemId={animatedItem.key === 'campaigns' ? animatedItem.id : null}
-                        onUpdateAdGroupItems={(id, items, type) => updateHandler('adGroups', 'Updated ad group items', id, { [type]: items })}
-                        onNavigateToAdGroup={handleNavigateToAdGroup}
-                    />
-                </div>
+                <>
+                    <Tabs tabs={campaignTabs} activeTab={activeCampaignTab} onTabClick={setActiveCampaignTab} />
+                    {activeCampaignTab === 'manual' && (
+                        <div className="campaign-view-grid">
+                            <CampaignCreator 
+                                onAddCampaignFromPlaybook={handleCreateCampaignFromPlaybook}
+                                campaigns={activeWorkspace.campaigns} 
+                                products={activeWorkspace.products}
+                                disabled={isFrozen} 
+                                workspaceBrand={activeWorkspace.brand} 
+                            />
+                            <CampaignHierarchy 
+                                campaigns={activeWorkspace.campaigns} 
+                                adGroups={activeWorkspace.adGroups}
+                                onUpdate={(id, u) => updateHandler('campaigns', 'Updated campaign', id, u)} 
+                                onDelete={handleDeleteCampaign} 
+                                disabled={isFrozen} 
+                                animatedItemId={animatedItem.key === 'campaigns' ? animatedItem.id : null}
+                                onUpdateAdGroupItems={(id, items, type) => updateHandler('adGroups', 'Updated ad group items', id, { [type]: items })}
+                                onNavigateToAdGroup={handleNavigateToAdGroup}
+                            />
+                        </div>
+                    )}
+                    {activeCampaignTab === 'ai' && (
+                        <AICampaignSetup
+                            products={activeWorkspace.products}
+                            keywords={activeWorkspace.keywords}
+                            campaigns={activeWorkspace.campaigns}
+                            onApplyPlan={handleApplyAIPlan}
+                            disabled={isFrozen}
+                            workspaceBrand={activeWorkspace.brand}
+                        />
+                    )}
+                </>
             );
         case 'AD_GROUPS':
              return <AdGroupManager 
