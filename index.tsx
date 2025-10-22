@@ -903,7 +903,11 @@ const App = () => {
             return (
                 <div className="dashboard-grid">
                     <div className="dashboard-main">
-                        <PlanSummary workspace={activeWorkspace} goals={activeWorkspace.goals} />
+                        <PlanSummary 
+                            workspace={activeWorkspace} 
+                            goals={activeWorkspace.goals}
+                            onNavigate={(view) => setActiveView(view as View)}
+                        />
                         <PlanReportGenerator 
                             workspace={activeWorkspace} 
                             disabled={isFrozen}

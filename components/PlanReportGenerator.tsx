@@ -59,7 +59,7 @@ export const PlanReportGenerator: React.FC<PlanReportGeneratorProps> = ({
             // SECURITY NOTE: API key is exposed in client-side code.
             // For production use, move AI API calls to a secure backend service to protect credentials.
             // This client-side implementation is for demonstration purposes only.
-            const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+            const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
             // Prepare data summary for AI analysis
             const totalCampaigns = workspace.campaigns.length;
