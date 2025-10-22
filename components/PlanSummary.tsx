@@ -37,27 +37,7 @@ export const PlanSummary: React.FC<PlanSummaryProps> = ({ workspace, goals, onNa
         }));
     }, [workspace.campaigns]);
 
-    // Calculate keyword match type distribution
-    const keywordMatchTypeData = useMemo(() => {
-        const matchTypeCount: { [key: string]: number } = {};
-        workspace.keywords.forEach((keyword: any) => {
-            const matchType = keyword.matchType || 'BROAD';
-            matchTypeCount[matchType] = (matchTypeCount[matchType] || 0) + 1;
-        });
-        
-        const matchTypeColors: { [key: string]: string } = {
-            'EXACT': '#10b981',
-            'PHRASE': '#3b82f6',
-            'BROAD': '#fbbf24',
-            'TARGETING': '#8b5cf6'
-        };
-        
-        return Object.entries(matchTypeCount).map(([label, value]) => ({
-            label,
-            value,
-            color: matchTypeColors[label] || '#6b7280'
-        }));
-    }, [workspace.keywords]);
+
 
     // Calculate campaign metrics
     const campaignMetrics = useMemo(() => {
@@ -146,13 +126,6 @@ export const PlanSummary: React.FC<PlanSummaryProps> = ({ workspace, goals, onNa
                         <PieChart
                             title="Budget Distribution by Campaign Type"
                             data={budgetByPlaybook}
-                        />
-                    )}
-                    
-                    {keywordMatchTypeData.length > 0 && (
-                        <PieChart
-                            title="Keyword Distribution by Match Type"
-                            data={keywordMatchTypeData}
                         />
                     )}
                 </div>
