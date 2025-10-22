@@ -13,12 +13,20 @@ export const PlanSummary: React.FC<PlanSummaryProps> = ({ workspace, goals, onNa
     const assignedKeywordsCount = useMemo(() => new Set(workspace.adGroups.flatMap(ag => (ag.keywords || []).map(k => k.id))).size, [workspace.adGroups]);
     const assignmentRate = totalKeywords > 0 ? ((assignedKeywordsCount / totalKeywords) * 100).toFixed(0) : 0;
     
-    // Calculate budget distribution by campaign
+    // Calculate budget distribution by campaign type
     const budgetByPlaybook = useMemo(() => {
         const distribution: { [key: string]: number } = {};
         workspace.campaigns.forEach((campaign: any) => {
-            const playbook = campaign.playbook || 'Other';
-            distribution[playbook] = (distribution[playbook] || 0) + (campaign.budget || 0);
+            // Create a descriptive campaign type label
+            let campaignType = 'Other';
+            if (campaign.type && campaign.match && campaign.theme) {
+                campaignType = `${campaign.type} ${campaign.match} ${campaign.theme}`;
+            } else if (campaign.type && campaign.theme) {
+                campaignType = `${campaign.type} ${campaign.theme}`;
+            } else if (campaign.type) {
+                campaignType = campaign.type;
+            }
+            distribution[campaignType] = (distribution[campaignType] || 0) + (campaign.budget || 0);
         });
         
         const colors = ['#fbbf24', '#3b82f6', '#10b981', '#ef4444', '#8b5cf6', '#ec4899'];
