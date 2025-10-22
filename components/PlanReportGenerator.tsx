@@ -48,6 +48,7 @@ export const PlanReportGenerator: React.FC<PlanReportGeneratorProps> = ({
     const [isGenerating, setIsGenerating] = useState(false);
     const [reportInsights, setReportInsights] = useState<ReportInsights | null>(null);
     const [showReport, setShowReport] = useState(false);
+    const [showHistory, setShowHistory] = useState(false);
     const reportRef = useRef<HTMLDivElement>(null);
 
     const generateReport = async () => {
@@ -862,6 +863,16 @@ IMPORTANT: Provide detailed, actionable insights with specific numbers and perce
                     AI Plan Report
                 </h2>
                 <div style={{ display: 'flex', gap: '0.5rem' }}>
+                    {workspace?.reportHistory && workspace.reportHistory.length > 0 && (
+                        <button 
+                            onClick={() => setShowHistory(!showHistory)}
+                            className="btn btn-secondary"
+                            style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}
+                        >
+                            <i className="fa-solid fa-clock-rotate-left"></i>
+                            {showHistory ? 'Hide' : 'View'} History ({workspace.reportHistory.length})
+                        </button>
+                    )}
                     {!showReport && (
                         <button 
                             onClick={generateReport} 
@@ -907,6 +918,58 @@ IMPORTANT: Provide detailed, actionable insights with specific numbers and perce
                     )}
                 </div>
             </div>
+
+            {showHistory && workspace?.reportHistory && workspace.reportHistory.length > 0 && (
+                <div style={{ 
+                    marginBottom: '1.5rem', 
+                    padding: '1rem', 
+                    background: '#f8f9fa', 
+                    borderRadius: '8px',
+                    border: '2px solid #667eea'
+                }}>
+                    <h3 style={{ marginBottom: '1rem', color: '#667eea' }}>
+                        <i className="fa-solid fa-history" style={{ marginRight: '0.5rem' }}></i>
+                        Report History
+                    </h3>
+                    <div style={{ display: 'grid', gap: '0.75rem' }}>
+                        {workspace.reportHistory.slice().reverse().map((report, index) => (
+                            <div 
+                                key={index}
+                                style={{ 
+                                    padding: '0.75rem', 
+                                    background: 'white', 
+                                    borderRadius: '6px',
+                                    border: '1px solid #ddd',
+                                    display: 'flex',
+                                    justifyContent: 'space-between',
+                                    alignItems: 'center'
+                                }}
+                            >
+                                <div>
+                                    <div style={{ fontWeight: 'bold', marginBottom: '0.25rem' }}>
+                                        Report Generated {new Date(report.timestamp).toLocaleString()}
+                                    </div>
+                                    <div style={{ fontSize: '0.85rem', color: '#666' }}>
+                                        {report.planSnapshot?.totalCampaigns} campaigns, {report.planSnapshot?.totalKeywords} keywords, ${report.planSnapshot?.totalBudget?.toFixed(2)} budget
+                                    </div>
+                                </div>
+                                <button 
+                                    className="button"
+                                    onClick={() => {
+                                        setReportInsights(report.insights);
+                                        setShowReport(true);
+                                        setShowHistory(false);
+                                    }}
+                                    style={{ fontSize: '0.85rem' }}
+                                >
+                                    <i className="fa-solid fa-eye" style={{ marginRight: '0.5rem' }}></i>
+                                    View
+                                </button>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
 
             {!showReport && !isGenerating && (
                 <div style={{ padding: '2rem', textAlign: 'center', color: '#777' }}>

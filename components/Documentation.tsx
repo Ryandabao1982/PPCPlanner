@@ -1,17 +1,23 @@
 import React, { useState } from 'react';
 
 const DOC_TABS = [
-    { id: 'start', label: 'Getting Started' },
-    { id: 'manual', label: 'User Manual' },
-    { id: 'arch', label: 'Architecture' },
-    { id: 'ui', label: 'UI/UX Guide' },
-    { id: 'ref', label: 'Function Reference' },
+    { id: 'start', label: 'Getting Started', icon: 'fa-solid fa-rocket' },
+    { id: 'manual', label: 'User Manual', icon: 'fa-solid fa-book' },
+    { id: 'shortcuts', label: 'Keyboard Shortcuts', icon: 'fa-solid fa-keyboard' },
+    { id: 'faq', label: 'FAQ', icon: 'fa-solid fa-circle-question' },
+    { id: 'glossary', label: 'PPC Glossary', icon: 'fa-solid fa-spell-check' },
+    { id: 'arch', label: 'Architecture', icon: 'fa-solid fa-diagram-project' },
 ];
 
 const DocsTabNav = ({ activeTab, onTabClick }) => (
     <nav className="tab-nav" style={{ padding: '0 1.5rem' }}>
         {DOC_TABS.map(tab => (
-            <button key={tab.id} className={`tab-item ${activeTab === tab.id ? 'active' : ''}`} onClick={() => onTabClick(tab.id)}>
+            <button 
+                key={tab.id} 
+                className={`tab-item ${activeTab === tab.id ? 'active' : ''}`} 
+                onClick={() => onTabClick(tab.id)}
+            >
+                <i className={tab.icon} style={{ marginRight: '0.5rem' }}></i>
                 {tab.label}
             </button>
         ))}
@@ -192,7 +198,7 @@ const ArchitectureContent = () => (
             <li><strong>Rendering:</strong> <code>react-dom/client</code> (Concurrent Mode)</li>
             <li><strong>Language:</strong> TypeScript</li>
             <li><strong>Styling:</strong> CSS-in-JS (via a <code>styles.ts</code> file)</li>
-            <li><strong>Bundling/Imports:</strong> Handled by esbuild via AI Studio's environment using import maps.</li>
+            <li><strong>Bundling:</strong> Vite 6.2.0 for fast development and optimized builds</li>
         </ul>
 
         <h2>State Management</h2>
@@ -206,36 +212,26 @@ const ArchitectureContent = () => (
         <h2>Component Structure</h2>
         <p>The application is broken down into functional components, each with a specific responsibility, located in the <code>/components</code>, <code>/hooks</code>, and <code>/utils</code> directories.</p>
         
+        <h2>Key Features</h2>
+        <ul>
+            <li><strong>Workspace Management:</strong> Multi-brand support with isolated state per workspace</li>
+            <li><strong>AI Integration:</strong> Google Gemini API for keyword generation and report analysis</li>
+            <li><strong>Export System:</strong> Amazon Ads Bulksheet 2.0 compatible XLSX generation</li>
+            <li><strong>Activity Logging:</strong> Complete audit trail of all user actions</li>
+            <li><strong>Health Checking:</strong> Validation system to ensure campaign completeness</li>
+        </ul>
+
         <h2>Key Logic and Modules</h2>
         <ul>
             <li><strong>Bulksheet Generation (<code>utils/helpers.ts</code>):</strong> The <code>generateBulkUploadXlsx</code> function is the core of the export feature. It takes the entire workspace state and uses the <code>sheetjs-xlsx</code> library to construct a multi-sheet <code>.xlsx</code> file that strictly adheres to the Amazon Bulksheets 2.0 format.</li>
             <li><strong>AI Integration (<code>components/KeywordBank.tsx</code>):</strong> The Keyword Bank component integrates with the Gemini API. It constructs a detailed prompt and specifies a JSON schema for the response, ensuring the data returned from the API is structured and easy to parse.</li>
-        </ul>
-    </>
-);
-
-const UiUxGuideContent = () => (
-    <>
-        <h1>UI/UX Guide</h1>
-        <p>This document outlines the design philosophy, style guide, and user experience principles for the PPC Planner.</p>
-        
-        <h2>Design Philosophy</h2>
-        <p>The UI is designed to be:</p>
-        <ul>
-            <li><strong>Efficient:</strong> The layout is structured to minimize clicks and context switching.</li>
-            <li><strong>Clear:</strong> Information is presented in a structured and predictable way with immediate feedback.</li>
-            <li><strong>Professional:</strong> The dark theme creates a focused, data-centric environment.</li>
-            <li><strong>Safe:</strong> Critical actions like exporting are gated behind a "Freeze" state to prevent errors.</li>
+            <li><strong>Report Generation (<code>components/PlanReportGenerator.tsx</code>):</strong> AI-powered analysis engine that generates comprehensive brand presentation reports with insights, recommendations, and projections.</li>
         </ul>
 
-        <h2>Component Library & Patterns</h2>
-        <ul>
-            <li><strong>Sections:</strong> The primary content container for consistency.</li>
-            <li><strong>Tabs:</strong> Organize related functionality within a single view to reduce clutter.</li>
-            <li><strong>Forms & Previews:</strong> Generators provide real-time previews for immediate feedback.</li>
-            <li><strong>Empty States:</strong> Guide the user on what to do next when a view has no data.</li>
-            <li><strong>Toasts:</strong> Non-blocking notifications confirm user actions.</li>
-        </ul>
+        <div className="info-box" style={{ marginTop: '1.5rem' }}>
+            <i className="fa-solid fa-info-circle"></i>
+            <p><strong>Note:</strong> The application is fully client-side with no backend server. All processing happens in the browser, ensuring privacy and fast performance.</p>
+        </div>
     </>
 );
 
@@ -261,22 +257,276 @@ const FunctionReferenceContent = () => (
     </>
 );
 
+const KeyboardShortcutsContent = () => (
+    <>
+        <h1>Keyboard Shortcuts</h1>
+        <p>Master these keyboard shortcuts to navigate the PPC Planner efficiently.</p>
+
+        <h2>Global Shortcuts</h2>
+        <div style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '1rem' }}>
+                <thead>
+                    <tr style={{ backgroundColor: '#667eea', color: 'white' }}>
+                        <th style={{ padding: '0.75rem', textAlign: 'left', border: '1px solid #ddd' }}>Shortcut</th>
+                        <th style={{ padding: '0.75rem', textAlign: 'left', border: '1px solid #ddd' }}>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr style={{ backgroundColor: '#f8f9fa' }}>
+                        <td style={{ padding: '0.75rem', border: '1px solid #ddd' }}><kbd>Ctrl/Cmd + K</kbd></td>
+                        <td style={{ padding: '0.75rem', border: '1px solid #ddd' }}>Open Command Palette</td>
+                    </tr>
+                    <tr style={{ backgroundColor: 'white' }}>
+                        <td style={{ padding: '0.75rem', border: '1px solid #ddd' }}><kbd>Ctrl/Cmd + H</kbd></td>
+                        <td style={{ padding: '0.75rem', border: '1px solid #ddd' }}>Open Help & Documentation</td>
+                    </tr>
+                    <tr style={{ backgroundColor: '#f8f9fa' }}>
+                        <td style={{ padding: '0.75rem', border: '1px solid #ddd' }}><kbd>Ctrl/Cmd + S</kbd></td>
+                        <td style={{ padding: '0.75rem', border: '1px solid #ddd' }}>Save workspace (auto-saves to localStorage)</td>
+                    </tr>
+                    <tr style={{ backgroundColor: 'white' }}>
+                        <td style={{ padding: '0.75rem', border: '1px solid #ddd' }}><kbd>Esc</kbd></td>
+                        <td style={{ padding: '0.75rem', border: '1px solid #ddd' }}>Close modals and dialogs</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <h2>Navigation Shortcuts</h2>
+        <div style={{ overflowX: 'auto', marginTop: '1rem' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                <thead>
+                    <tr style={{ backgroundColor: '#667eea', color: 'white' }}>
+                        <th style={{ padding: '0.75rem', textAlign: 'left', border: '1px solid #ddd' }}>Shortcut</th>
+                        <th style={{ padding: '0.75rem', textAlign: 'left', border: '1px solid #ddd' }}>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr style={{ backgroundColor: '#f8f9fa' }}>
+                        <td style={{ padding: '0.75rem', border: '1px solid #ddd' }}><kbd>1-9</kbd></td>
+                        <td style={{ padding: '0.75rem', border: '1px solid #ddd' }}>Quick navigate to sidebar sections (when focused)</td>
+                    </tr>
+                    <tr style={{ backgroundColor: 'white' }}>
+                        <td style={{ padding: '0.75rem', border: '1px solid #ddd' }}><kbd>Tab</kbd></td>
+                        <td style={{ padding: '0.75rem', border: '1px solid #ddd' }}>Move between form fields</td>
+                    </tr>
+                    <tr style={{ backgroundColor: '#f8f9fa' }}>
+                        <td style={{ padding: '0.75rem', border: '1px solid #ddd' }}><kbd>Enter</kbd></td>
+                        <td style={{ padding: '0.75rem', border: '1px solid #ddd' }}>Submit forms or activate buttons</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div className="info-box" style={{ marginTop: '1.5rem' }}>
+            <i className="fa-solid fa-lightbulb"></i>
+            <p><strong>Pro Tip:</strong> Most actions in the planner can be accessed via the Command Palette (Ctrl/Cmd + K), which also shows available keyboard shortcuts.</p>
+        </div>
+    </>
+);
+
+const FAQContent = () => (
+    <>
+        <h1>Frequently Asked Questions</h1>
+        <p>Find answers to common questions about using the PPC Planner.</p>
+
+        <h2>General Questions</h2>
+        <div className="faq-item" style={{ marginBottom: '1.5rem' }}>
+            <h3 style={{ color: '#667eea', marginBottom: '0.5rem' }}>
+                <i className="fa-solid fa-question-circle" style={{ marginRight: '0.5rem' }}></i>
+                What is the PPC Planner?
+            </h3>
+            <p>The PPC Planner is a comprehensive tool for planning and structuring Amazon PPC campaigns. It helps you organize campaigns, keywords, and products before uploading to Amazon Ads.</p>
+        </div>
+
+        <div className="faq-item" style={{ marginBottom: '1.5rem' }}>
+            <h3 style={{ color: '#667eea', marginBottom: '0.5rem' }}>
+                <i className="fa-solid fa-question-circle" style={{ marginRight: '0.5rem' }}></i>
+                How do I export my campaign plan?
+            </h3>
+            <p>First, run a Health Check to ensure your plan is complete. Then, freeze your plan in the Dashboard using the "Freeze & Lock Plan" button. Once frozen, you can export it as an Amazon Ads-compatible XLSX file.</p>
+        </div>
+
+        <div className="faq-item" style={{ marginBottom: '1.5rem' }}>
+            <h3 style={{ color: '#667eea', marginBottom: '0.5rem' }}>
+                <i className="fa-solid fa-question-circle" style={{ marginRight: '0.5rem' }}></i>
+                Where is my data stored?
+            </h3>
+            <p>All your data is stored locally in your browser's localStorage. No data is sent to external servers except when using AI features (keyword generation and report generation).</p>
+        </div>
+
+        <h2>Workflow Questions</h2>
+        <div className="faq-item" style={{ marginBottom: '1.5rem' }}>
+            <h3 style={{ color: '#667eea', marginBottom: '0.5rem' }}>
+                <i className="fa-solid fa-question-circle" style={{ marginRight: '0.5rem' }}></i>
+                What's the recommended workflow?
+            </h3>
+            <p>Follow these steps: 1) Create a workspace and add products, 2) Generate keywords using AI, 3) Create campaigns from playbooks, 4) Create ad groups, 5) Assign keywords and products, 6) Set goals and bids, 7) Run health check, 8) Freeze and export.</p>
+        </div>
+
+        <div className="faq-item" style={{ marginBottom: '1.5rem' }}>
+            <h3 style={{ color: '#667eea', marginBottom: '0.5rem' }}>
+                <i className="fa-solid fa-question-circle" style={{ marginRight: '0.5rem' }}></i>
+                Can I undo changes?
+            </h3>
+            <p>Currently, there's no undo feature. However, you can unfreeze a plan to make edits, and all changes are logged in the Activity Log for reference.</p>
+        </div>
+
+        <h2>Technical Questions</h2>
+        <div className="faq-item" style={{ marginBottom: '1.5rem' }}>
+            <h3 style={{ color: '#667eea', marginBottom: '0.5rem' }}>
+                <i className="fa-solid fa-question-circle" style={{ marginRight: '0.5rem' }}></i>
+                Do I need an API key?
+            </h3>
+            <p>An API key is only required for AI features (keyword generation and report generation). All other features work without an API key.</p>
+        </div>
+
+        <div className="faq-item" style={{ marginBottom: '1.5rem' }}>
+            <h3 style={{ color: '#667eea', marginBottom: '0.5rem' }}>
+                <i className="fa-solid fa-question-circle" style={{ marginRight: '0.5rem' }}></i>
+                What browsers are supported?
+            </h3>
+            <p>The PPC Planner works best on modern browsers: Chrome, Firefox, Safari, and Edge (latest versions). Internet Explorer is not supported.</p>
+        </div>
+    </>
+);
+
+const GlossaryContent = () => (
+    <>
+        <h1>PPC Glossary</h1>
+        <p>Essential Amazon PPC terms and definitions to help you understand campaign planning.</p>
+
+        <div style={{ display: 'grid', gap: '1rem', marginTop: '1.5rem' }}>
+            <div className="glossary-term" style={{ padding: '1rem', background: '#f8f9fa', borderRadius: '8px', borderLeft: '4px solid #667eea' }}>
+                <h3 style={{ color: '#667eea', marginBottom: '0.5rem' }}>ACoS (Advertising Cost of Sales)</h3>
+                <p style={{ marginBottom: '0.5rem' }}>The percentage of attributed sales spent on advertising. Calculated as: (Ad Spend ÷ Sales) × 100</p>
+                <p style={{ fontSize: '0.85rem', color: '#666', fontStyle: 'italic' }}>Example: $50 in ad spend generating $200 in sales = 25% ACoS</p>
+            </div>
+
+            <div className="glossary-term" style={{ padding: '1rem', background: '#f8f9fa', borderRadius: '8px', borderLeft: '4px solid #667eea' }}>
+                <h3 style={{ color: '#667eea', marginBottom: '0.5rem' }}>ROAS (Return on Ad Spend)</h3>
+                <p style={{ marginBottom: '0.5rem' }}>The revenue generated for every dollar spent on advertising. Calculated as: Sales ÷ Ad Spend</p>
+                <p style={{ fontSize: '0.85rem', color: '#666', fontStyle: 'italic' }}>Example: $200 in sales from $50 ad spend = 4x ROAS</p>
+            </div>
+
+            <div className="glossary-term" style={{ padding: '1rem', background: '#f8f9fa', borderRadius: '8px', borderLeft: '4px solid #667eea' }}>
+                <h3 style={{ color: '#667eea', marginBottom: '0.5rem' }}>CPC (Cost Per Click)</h3>
+                <p style={{ marginBottom: '0.5rem' }}>The amount you pay each time someone clicks on your ad. Calculated as: Ad Spend ÷ Clicks</p>
+                <p style={{ fontSize: '0.85rem', color: '#666', fontStyle: 'italic' }}>Example: $100 spent on 200 clicks = $0.50 CPC</p>
+            </div>
+
+            <div className="glossary-term" style={{ padding: '1rem', background: '#f8f9fa', borderRadius: '8px', borderLeft: '4px solid #667eea' }}>
+                <h3 style={{ color: '#667eea', marginBottom: '0.5rem' }}>CTR (Click-Through Rate)</h3>
+                <p style={{ marginBottom: '0.5rem' }}>The percentage of impressions that resulted in clicks. Calculated as: (Clicks ÷ Impressions) × 100</p>
+                <p style={{ fontSize: '0.85rem', color: '#666', fontStyle: 'italic' }}>Example: 100 clicks from 10,000 impressions = 1% CTR</p>
+            </div>
+
+            <div className="glossary-term" style={{ padding: '1rem', background: '#f8f9fa', borderRadius: '8px', borderLeft: '4px solid #667eea' }}>
+                <h3 style={{ color: '#667eea', marginBottom: '0.5rem' }}>CVR (Conversion Rate)</h3>
+                <p style={{ marginBottom: '0.5rem' }}>The percentage of clicks that resulted in a sale. Calculated as: (Orders ÷ Clicks) × 100</p>
+                <p style={{ fontSize: '0.85rem', color: '#666', fontStyle: 'italic' }}>Example: 20 orders from 100 clicks = 20% CVR</p>
+            </div>
+
+            <div className="glossary-term" style={{ padding: '1rem', background: '#f8f9fa', borderRadius: '8px', borderLeft: '4px solid #667eea' }}>
+                <h3 style={{ color: '#667eea', marginBottom: '0.5rem' }}>Match Types</h3>
+                <p style={{ marginBottom: '0.5rem' }}>Determines how closely a customer's search must match your keyword:</p>
+                <ul style={{ paddingLeft: '1.5rem', marginTop: '0.5rem' }}>
+                    <li><strong>Exact:</strong> Matches exact keyword or close variants</li>
+                    <li><strong>Phrase:</strong> Matches keyword phrase in any order with additional words</li>
+                    <li><strong>Broad:</strong> Matches related searches and synonyms</li>
+                </ul>
+            </div>
+
+            <div className="glossary-term" style={{ padding: '1rem', background: '#f8f9fa', borderRadius: '8px', borderLeft: '4px solid #667eea' }}>
+                <h3 style={{ color: '#667eea', marginBottom: '0.5rem' }}>Keyword Intent</h3>
+                <p style={{ marginBottom: '0.5rem' }}>The purpose behind a search query:</p>
+                <ul style={{ paddingLeft: '1.5rem', marginTop: '0.5rem' }}>
+                    <li><strong>Branded:</strong> Searches including your brand name</li>
+                    <li><strong>Generic:</strong> General product category searches</li>
+                    <li><strong>Competitor:</strong> Searches for competitor brands</li>
+                    <li><strong>Research:</strong> Informational or comparison searches</li>
+                </ul>
+            </div>
+
+            <div className="glossary-term" style={{ padding: '1rem', background: '#f8f9fa', borderRadius: '8px', borderLeft: '4px solid #667eea' }}>
+                <h3 style={{ color: '#667eea', marginBottom: '0.5rem' }}>Sponsored Product (SP)</h3>
+                <p style={{ marginBottom: '0.5rem' }}>Keyword-targeted ads that appear in search results and product detail pages.</p>
+            </div>
+
+            <div className="glossary-term" style={{ padding: '1rem', background: '#f8f9fa', borderRadius: '8px', borderLeft: '4px solid #667eea' }}>
+                <h3 style={{ color: '#667eea', marginBottom: '0.5rem' }}>Sponsored Brand (SB)</h3>
+                <p style={{ marginBottom: '0.5rem' }}>Ads featuring your brand logo, custom headline, and multiple products in search results.</p>
+            </div>
+
+            <div className="glossary-term" style={{ padding: '1rem', background: '#f8f9fa', borderRadius: '8px', borderLeft: '4px solid #667eea' }}>
+                <h3 style={{ color: '#667eea', marginBottom: '0.5rem' }}>Placement Modifiers</h3>
+                <p style={{ marginBottom: '0.5rem' }}>Bid adjustments for specific ad placements:</p>
+                <ul style={{ paddingLeft: '1.5rem', marginTop: '0.5rem' }}>
+                    <li><strong>Top of Search:</strong> First page of search results</li>
+                    <li><strong>Product Pages:</strong> On competitor or related product pages</li>
+                </ul>
+            </div>
+        </div>
+    </>
+);
+
 export const DocumentationViewer = () => {
     const [activeTab, setActiveTab] = useState('start');
+    const [searchTerm, setSearchTerm] = useState('');
 
     const renderDocContent = () => {
         switch (activeTab) {
             case 'start': return <GettingStartedContent />;
             case 'manual': return <UserManualContent />;
+            case 'shortcuts': return <KeyboardShortcutsContent />;
+            case 'faq': return <FAQContent />;
+            case 'glossary': return <GlossaryContent />;
             case 'arch': return <ArchitectureContent />;
-            case 'ui': return <UiUxGuideContent />;
-            case 'ref': return <FunctionReferenceContent />;
             default: return null;
         }
     };
 
     return (
         <div className="docs-container">
+            <div style={{ padding: '1rem 1.5rem', borderBottom: '1px solid #ddd', background: '#f8f9fa' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                    <i className="fa-solid fa-search" style={{ color: '#667eea' }}></i>
+                    <input
+                        type="text"
+                        placeholder="Search documentation... (coming soon)"
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        style={{
+                            flex: 1,
+                            padding: '0.5rem 1rem',
+                            border: '2px solid #ddd',
+                            borderRadius: '8px',
+                            fontSize: '0.95rem'
+                        }}
+                        disabled
+                    />
+                    <div style={{ display: 'flex', gap: '0.5rem' }}>
+                        <a 
+                            href="https://github.com/Ryandabao1982/PPCPlanner" 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            style={{ 
+                                padding: '0.5rem 1rem', 
+                                background: '#667eea', 
+                                color: 'white', 
+                                borderRadius: '6px',
+                                textDecoration: 'none',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '0.5rem'
+                            }}
+                        >
+                            <i className="fa-brands fa-github"></i>
+                            GitHub
+                        </a>
+                    </div>
+                </div>
+            </div>
             <DocsTabNav activeTab={activeTab} onTabClick={setActiveTab} />
             <div className="docs-content">
                 {renderDocContent()}
