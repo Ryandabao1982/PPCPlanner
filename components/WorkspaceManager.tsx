@@ -45,42 +45,45 @@ export const WorkspaceManager: React.FC<WorkspaceManagerProps> = ({ workspaces, 
     };
     
     return (
-        <div style={{display: 'flex', gap: '1rem', alignItems: 'center'}}>
-            {workspaceCount > 0 && (
-                 <select value={activeWorkspaceId || ''} onChange={e => onSelect(e.target.value)} style={{minWidth: '150px'}}>
-                    {Object.entries(workspaces).map(([id, ws]) => (
-                        <option key={id} value={id}>{(ws as any).name}</option>
-                    ))}
-                </select>
-            )}
-            <input 
-                type="text"
-                value={newBrandName}
-                onChange={e => setNewBrandName(e.target.value)}
-                placeholder="Create new brand..."
-                style={{width: '200px'}}
-            />
-            <button className="button" onClick={handleCreate} disabled={!newBrandName.trim() || isDuplicate} style={{margin: 0, width: 'auto'}}>
-                Create
-            </button>
-            {workspaceCount > 0 && (
-                 <button 
-                    className="delete-button" 
-                    onClick={() => onDelete(activeWorkspaceId)} 
-                    disabled={!activeWorkspaceId}
-                    title="Delete current brand"
-                    style={{margin: 0, width: 'auto', padding: '0.65rem'}}
-                >
-                    <i className="fa-solid fa-trash"></i>
-                </button>
-            )}
-            <div style={{marginLeft: 'auto', display: 'flex', gap: '0.5rem'}}>
+        <div className="workspace-toolbar">
+            <div className="workspace-actions">
+                {workspaceCount > 0 && (
+                    <select className="workspace-selector" value={activeWorkspaceId || ''} onChange={e => onSelect(e.target.value)}>
+                        {Object.entries(workspaces).map(([id, ws]) => (
+                            <option key={id} value={id}>{(ws as any).name}</option>
+                        ))}
+                    </select>
+                )}
+                <div className="brand-input-group">
+                    <input 
+                        type="text"
+                        value={newBrandName}
+                        onChange={e => setNewBrandName(e.target.value)}
+                        placeholder="Create new brand..."
+                        className="brand-input"
+                    />
+                    <button className="button" onClick={handleCreate} disabled={!newBrandName.trim() || isDuplicate}>
+                        Create
+                    </button>
+                </div>
+                {workspaceCount > 0 && (
+                    <button 
+                        className="delete-button" 
+                        onClick={() => onDelete(activeWorkspaceId)} 
+                        disabled={!activeWorkspaceId}
+                        title="Delete current brand"
+                        aria-label="Delete current brand"
+                    >
+                        <i className="fa-solid fa-trash"></i>
+                    </button>
+                )}
+            </div>
+            <div className="workspace-utilities">
                 <button 
                     className="button" 
                     onClick={onExportData}
                     disabled={workspaceCount === 0}
                     title="Export all workspace data"
-                    style={{margin: 0, width: 'auto', padding: '0.65rem'}}
                 >
                     <i className="fa-solid fa-file-export"></i> Export Data
                 </button>
@@ -88,7 +91,6 @@ export const WorkspaceManager: React.FC<WorkspaceManagerProps> = ({ workspaces, 
                     className="button" 
                     onClick={handleImportClick}
                     title="Import workspace data"
-                    style={{margin: 0, width: 'auto', padding: '0.65rem'}}
                 >
                     <i className="fa-solid fa-file-import"></i> Import Data
                 </button>

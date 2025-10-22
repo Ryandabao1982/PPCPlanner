@@ -50,52 +50,58 @@ const NAV_ITEMS: { id: View, name: string, icon: string }[] = [
     { id: 'HELP', name: 'Help & Docs', icon: 'fa-solid fa-circle-question' },
 ];
 
-const SidebarNav = ({ activeView, onSelectView, user, onChangeUser }) => {
+const SidebarNav = ({ activeView, onSelectView, user, onChangeUser, isOpen, onClose }) => {
     const [showUserMenu, setShowUserMenu] = useState(false);
     
     return (
-        <nav className="sidebar-nav">
-            <div className="sidebar-header">
-                <div className="sidebar-logo">
-                    GOOD<span>-</span>WIT
-                </div>
-            </div>
-            <ul className="nav-list">
-                {NAV_ITEMS.map(item => (
-                    <li key={item.id} className={`nav-item ${activeView === item.id ? 'active' : ''}`} onClick={() => onSelectView(item.id)}>
-                        <i className={item.icon}></i>
-                        <span>{item.name}</span>
-                    </li>
-                ))}
-            </ul>
-            <div className="sidebar-footer">
-                <div className="user-profile-menu">
-                    {showUserMenu && (
-                        <div className="user-menu-dropdown">
-                            <div className="user-menu-item" onClick={() => {
-                                onChangeUser();
-                                setShowUserMenu(false);
-                            }}>
-                                <i className="fa-solid fa-user-pen"></i>
-                                <span>Change User</span>
-                            </div>
-                        </div>
-                    )}
-                    <button 
-                        className="user-menu-button"
-                        onClick={() => setShowUserMenu(!showUserMenu)}
-                    >
-                        <div className="user-profile">
-                            <img src={`https://i.pravatar.cc/40?u=${user?.username || 'User'}`} alt="User Avatar" />
-                            <div className="user-info">
-                                <span className="user-name">{user?.username || 'User'}</span>
-                                <span className="user-title">Advertiser</span>
-                            </div>
-                        </div>
+        <>
+            {isOpen && <div className="sidebar-overlay" onClick={onClose}></div>}
+            <nav className={`sidebar-nav ${isOpen ? 'sidebar-open' : ''}`}>
+                <div className="sidebar-header">
+                    <div className="sidebar-logo">
+                        GOOD<span>-</span>WIT
+                    </div>
+                    <button className="sidebar-close-btn" onClick={onClose} aria-label="Close menu">
+                        <i className="fa-solid fa-times"></i>
                     </button>
                 </div>
-            </div>
-        </nav>
+                <ul className="nav-list">
+                    {NAV_ITEMS.map(item => (
+                        <li key={item.id} className={`nav-item ${activeView === item.id ? 'active' : ''}`} onClick={() => { onSelectView(item.id); onClose(); }}>
+                            <i className={item.icon}></i>
+                            <span>{item.name}</span>
+                        </li>
+                    ))}
+                </ul>
+                <div className="sidebar-footer">
+                    <div className="user-profile-menu">
+                        {showUserMenu && (
+                            <div className="user-menu-dropdown">
+                                <div className="user-menu-item" onClick={() => {
+                                    onChangeUser();
+                                    setShowUserMenu(false);
+                                }}>
+                                    <i className="fa-solid fa-user-pen"></i>
+                                    <span>Change User</span>
+                                </div>
+                            </div>
+                        )}
+                        <button 
+                            className="user-menu-button"
+                            onClick={() => setShowUserMenu(!showUserMenu)}
+                        >
+                            <div className="user-profile">
+                                <img src={`https://i.pravatar.cc/40?u=${user?.username || 'User'}`} alt="User Avatar" />
+                                <div className="user-info">
+                                    <span className="user-name">{user?.username || 'User'}</span>
+                                    <span className="user-title">Advertiser</span>
+                                </div>
+                            </div>
+                        </button>
+                    </div>
+                </div>
+            </nav>
+        </>
     );
 };
 
@@ -147,6 +153,7 @@ const App = () => {
   const [targetedAdGroupId, setTargetedAdGroupId] = useState<number | null>(null);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [showLoginModal, setShowLoginModal] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const activeWorkspace = useMemo(() => {
     return workspaces[activeWorkspaceId] || null;
@@ -1009,10 +1016,22 @@ const App = () => {
       {showLoginModal && <UserLoginModal onLogin={handleUserLogin} />}
       <div className="app-container">
         <ToastContainer toasts={toasts} removeToast={removeToast} />
-        <SidebarNav activeView={activeView} onSelectView={handleSelectView} user={currentUser} onChangeUser={handleChangeUser} />
+        <SidebarNav 
+          activeView={activeView} 
+          onSelectView={handleSelectView} 
+          user={currentUser} 
+          onChangeUser={handleChangeUser}
+          isOpen={sidebarOpen}
+          onClose={() => setSidebarOpen(false)}
+        />
         <main className="main-content">
             <header className="main-header">
-                <h1>{headerTitle}</h1>
+                <div className="header-left">
+                    <button className="menu-toggle-btn" onClick={() => setSidebarOpen(!sidebarOpen)} aria-label="Toggle menu">
+                        <i className="fa-solid fa-bars"></i>
+                    </button>
+                    <h1>{headerTitle}</h1>
+                </div>
                 {activeView !== 'HELP' && <WorkspaceManager workspaces={workspaces} activeWorkspaceId={activeWorkspaceId} onSelect={setActiveWorkspaceId} onCreate={handleCreateBrand} onDelete={handleDeleteWorkspace} onExportData={handleExportWorkspaceData} onImportData={handleImportWorkspaceData} />}
             </header>
             <div className="content-area">
