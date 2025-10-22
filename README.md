@@ -115,11 +115,15 @@ This tool streamlines the entire planning process from initial campaign creation
    npm install
    ```
 
-3. **Configure environment** (optional - for AI features)
+3. **Configure environment** (required for AI features)
    ```bash
    cp .env.example .env.local
    # Edit .env.local and add your Google Gemini API key
+   # Get your API key from: https://ai.google.dev/
+   # Example: GEMINI_API_KEY=your_actual_api_key_here
    ```
+   
+   **Note**: The AI Report Generator and AI Keyword Suggestions features require a valid Google Gemini API key. Without it, these features will show an error message.
 
 4. **Start development server**
    ```bash
