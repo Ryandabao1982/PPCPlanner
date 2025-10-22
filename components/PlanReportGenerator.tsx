@@ -167,7 +167,18 @@ Use professional, brand-friendly language suitable for client presentation.`;
 
         } catch (error) {
             console.error("Error generating report:", error);
-            alert("Failed to generate report. Please ensure your API key is set and try again.");
+            let errorMsg = "Failed to generate report.";
+            if (error && typeof error === "object") {
+                if (error.message) {
+                    errorMsg += `\nDetails: ${error.message}`;
+                } else {
+                    errorMsg += `\nDetails: ${JSON.stringify(error)}`;
+                }
+            } else if (typeof error === "string") {
+                errorMsg += `\nDetails: ${error}`;
+            }
+            errorMsg += "\nPlease ensure your API key is set and try again.";
+            alert(errorMsg);
         } finally {
             setIsGenerating(false);
         }
