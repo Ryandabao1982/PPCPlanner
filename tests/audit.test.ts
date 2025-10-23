@@ -170,7 +170,7 @@ describe('Tool: Bulk Exporter (`generateBulkUploadXlsx`)', () => {
 
         const spSheetData = (mockXlsxUtils.aoa_to_sheet.mock.calls[0][0]);
         // Header + Campaign + 2 Placements + Ad Group + 3 Keywords + 1 Product Ad = 8 rows
-        expect(spSheetData).toHaveLength(8); 
+        expect(spSheetData).toHaveLength(9);
         expect(spSheetData[1]).toContain('Campaign');
         expect(spSheetData[1]).toContain(spWorkspace.campaigns[0].name);
         expect(spSheetData[2]).toContain('Bidding Placement'); // Top of Search
@@ -180,7 +180,7 @@ describe('Tool: Bulk Exporter (`generateBulkUploadXlsx`)', () => {
         expect(spSheetData[4]).toContain('Ad Group');
         expect(spSheetData[5]).toContain('Keyword');
         expect(spSheetData[5]).toContain('exact');
-        expect(spSheetData[7]).toContain('Product Ad');
+        expect(spSheetData[8]).toContain('Product Ad');
     });
     
     it('should correctly format Product Targeting expressions for SP PT campaigns', () => {
