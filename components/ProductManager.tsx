@@ -5,12 +5,13 @@ interface Product {
     sku: string;
     asin: string;
     parentAsin?: string;
+    category?: string;
 }
 
 interface ProductManagerProps {
     products: Product[];
     onAdd: (product: any) => void;
-    onUpdate: (id: number, updates: { sku?: string; asin?: string; parentAsin?: string }) => void;
+    onUpdate: (id: number, updates: { sku?: string; asin?: string; parentAsin?: string; category?: string }) => void;
     onDelete: (id: number) => void;
     disabled: boolean;
     animatedItemId: number | null;
@@ -20,6 +21,7 @@ export const ProductManager: React.FC<ProductManagerProps> = ({ products, onAdd,
     const [newSku, setNewSku] = useState('');
     const [newAsin, setNewAsin] = useState('');
     const [newParentAsin, setNewParentAsin] = useState('');
+    const [newCategory, setNewCategory] = useState('');
     const [showBulkImport, setShowBulkImport] = useState(false);
     const [bulkProductInput, setBulkProductInput] = useState('');
 
@@ -30,10 +32,12 @@ export const ProductManager: React.FC<ProductManagerProps> = ({ products, onAdd,
                 sku: newSku.trim(), 
                 asin: newAsin.trim(),
                 parentAsin: newParentAsin.trim() || undefined,
+                category: newCategory.trim() || undefined,
             });
             setNewSku('');
             setNewAsin('');
             setNewParentAsin('');
+            setNewCategory('');
         }
     };
 
@@ -53,7 +57,7 @@ export const ProductManager: React.FC<ProductManagerProps> = ({ products, onAdd,
                 return;
             }
 
-            const [sku, asin, parentAsin] = parts;
+            const [sku, asin, parentAsin, category] = parts;
 
             if (!sku) {
                 errors.push(`Line ${index + 1}: SKU is required`);
@@ -81,7 +85,8 @@ export const ProductManager: React.FC<ProductManagerProps> = ({ products, onAdd,
                 id: Date.now() + Math.random(),
                 sku: sku.trim(),
                 asin: asin.trim().toUpperCase(),
-                parentAsin: parentAsin ? parentAsin.trim().toUpperCase() : undefined
+                parentAsin: parentAsin ? parentAsin.trim().toUpperCase() : undefined,
+                category: category ? category.trim() : undefined
             });
         });
 
@@ -110,11 +115,12 @@ export const ProductManager: React.FC<ProductManagerProps> = ({ products, onAdd,
         if (products.length === 0) return;
 
         const csvContent = [
-            ['SKU', 'ASIN', 'Parent ASIN'].join(','),
+            ['SKU', 'ASIN', 'Parent ASIN', 'Category'].join(','),
             ...products.map(p => [
                 p.sku,
                 p.asin,
-                p.parentAsin || ''
+                p.parentAsin || '',
+                p.category || ''
             ].join(','))
         ].join('\n');
 
@@ -133,7 +139,7 @@ export const ProductManager: React.FC<ProductManagerProps> = ({ products, onAdd,
         <div className="section">
             <h2>Product Manager</h2>
             <div>
-                <div className="form-grid" style={{ gridTemplateColumns: '1fr 1fr 1fr' }}>
+                <div className="form-grid" style={{ gridTemplateColumns: '1fr 1fr 1fr 1fr' }}>
                     <div className="form-group">
                         <label>New SKU</label>
                         <input type="text" value={newSku} onChange={e => setNewSku(e.target.value)} placeholder="Parent SKU" disabled={disabled} />
@@ -145,6 +151,10 @@ export const ProductManager: React.FC<ProductManagerProps> = ({ products, onAdd,
                     <div className="form-group">
                         <label>Parent ASIN (Optional)</label>
                         <input type="text" value={newParentAsin} onChange={e => setNewParentAsin(e.target.value.toUpperCase())} placeholder="Parent ASIN" disabled={disabled} />
+                    </div>
+                    <div className="form-group">
+                        <label>Category (Optional)</label>
+                        <input type="text" value={newCategory} onChange={e => setNewCategory(e.target.value)} placeholder="Product Category" disabled={disabled} />
                     </div>
                 </div>
                 <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem' }}>
@@ -177,7 +187,7 @@ export const ProductManager: React.FC<ProductManagerProps> = ({ products, onAdd,
                             <textarea 
                                 value={bulkProductInput}
                                 onChange={e => setBulkProductInput(e.target.value)}
-                                placeholder="SKU,ASIN,Parent ASIN (optional)&#10;MYSKU-001,B0ABC123DE,B0PARENT01&#10;MYSKU-002,B0XYZ789GH&#10;&#10;Or tab-separated:&#10;MYSKU-001&#9;B0ABC123DE&#9;B0PARENT01"
+                                placeholder="SKU,ASIN,Parent ASIN (optional),Category (optional)&#10;MYSKU-001,B0ABC123DE,B0PARENT01,Beer Bongs&#10;MYSKU-002,B0XYZ789GH,,Reusable Bags&#10;&#10;Or tab-separated:&#10;MYSKU-001&#9;B0ABC123DE&#9;B0PARENT01&#9;Beer Bongs"
                                 disabled={disabled}
                                 rows={8}
                                 style={{ fontFamily: 'monospace', fontSize: '0.9rem' }}
@@ -248,6 +258,7 @@ export const ProductManager: React.FC<ProductManagerProps> = ({ products, onAdd,
                                     <th>SKU</th>
                                     <th>ASIN</th>
                                     <th>Parent ASIN</th>
+                                    <th>Category</th>
                                     <th>Actions</th>
                                 </tr>
                             </thead>
@@ -262,6 +273,9 @@ export const ProductManager: React.FC<ProductManagerProps> = ({ products, onAdd,
                                         </td>
                                         <td>
                                             <input type="text" value={p.parentAsin || ''} onChange={e => onUpdate(p.id, { parentAsin: e.target.value.toUpperCase() })} disabled={disabled} />
+                                        </td>
+                                        <td>
+                                            <input type="text" value={p.category || ''} onChange={e => onUpdate(p.id, { category: e.target.value })} disabled={disabled} placeholder="Category" />
                                         </td>
                                         <td>
                                             <button className="delete-button" onClick={() => onDelete(p.id)} disabled={disabled}>Delete</button>
