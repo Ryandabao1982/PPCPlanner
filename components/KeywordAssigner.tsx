@@ -5,6 +5,7 @@ interface KeywordInBank {
     id: number;
     text: string;
     intent: string;
+    category?: string;
 }
 interface KeywordInAdGroup extends KeywordInBank {
     matchType: string;
@@ -169,6 +170,7 @@ export const KeywordAssigner: React.FC<KeywordAssignerProps> = ({ keywords, adGr
                                     <tr>
                                         <th><input type="checkbox" onChange={(e) => setSelectedAvailable(e.target.checked ? sortedAvailable.map(k => k.id) : [])} checked={sortedAvailable.length > 0 && selectedAvailable.length === sortedAvailable.length} /></th>
                                         <th><button className="sort-btn" onClick={() => requestSortAvailable('text')}>Keyword {renderSortIndicator('text', sortConfigAvailable)}</button></th>
+                                        <th><button className="sort-btn" onClick={() => requestSortAvailable('category')}>Category {renderSortIndicator('category', sortConfigAvailable)}</button></th>
                                         <th>Globally Assigned To</th>
                                     </tr>
                                 </thead>
@@ -177,6 +179,7 @@ export const KeywordAssigner: React.FC<KeywordAssignerProps> = ({ keywords, adGr
                                         <tr key={kw.id}>
                                             <td><input type="checkbox" checked={selectedAvailable.includes(kw.id)} onChange={() => handleSelectAvailable(kw.id)} /></td>
                                             <td>{kw.text}</td>
+                                            <td>{kw.category || '-'}</td>
                                             <td>
                                                 {(keywordGlobalAssignmentMap.get(kw.id) || []).map(name =>
                                                     <span key={name} className="assigner-tag">{name}</span>
@@ -205,6 +208,7 @@ export const KeywordAssigner: React.FC<KeywordAssignerProps> = ({ keywords, adGr
                                     <tr>
                                         <th><input type="checkbox" onChange={(e) => setSelectedAssigned(e.target.checked ? sortedAssigned.map(k => k.id) : [])} checked={sortedAssigned.length > 0 && selectedAssigned.length === sortedAssigned.length} /></th>
                                         <th><button className="sort-btn" onClick={() => requestSortAssigned('text')}>Keyword {renderSortIndicator('text', sortConfigAssigned)}</button></th>
+                                        <th><button className="sort-btn" onClick={() => requestSortAssigned('category')}>Category {renderSortIndicator('category', sortConfigAssigned)}</button></th>
                                         <th><button className="sort-btn" onClick={() => requestSortAssigned('matchType')}>Match Type {renderSortIndicator('matchType', sortConfigAssigned)}</button></th>
                                         <th>Assigned to Selected</th>
                                     </tr>
@@ -214,6 +218,7 @@ export const KeywordAssigner: React.FC<KeywordAssignerProps> = ({ keywords, adGr
                                         <tr key={kw.id}>
                                             <td><input type="checkbox" checked={selectedAssigned.includes(kw.id)} onChange={() => handleSelectAssigned(kw.id)} /></td>
                                             <td>{kw.text}</td>
+                                            <td>{kw.category || '-'}</td>
                                             <td>{kw.matchType}</td>
                                             <td>
                                                 {kw.assignedToSelected.map(name =>

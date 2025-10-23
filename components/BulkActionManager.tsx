@@ -5,6 +5,7 @@ interface Keyword {
     id: number;
     text: string;
     intent: string;
+    category?: string;
 }
 
 interface BulkActionManagerProps {
@@ -18,10 +19,13 @@ export const BulkActionManager: React.FC<BulkActionManagerProps> = ({ keywords, 
     const [selectedKeywords, setSelectedKeywords] = useState<number[]>([]);
     const [action, setAction] = useState('update_intent');
     const [updateValue, setUpdateValue] = useState(NAMING_COMPONENTS.INTENT[0].value);
+    const [categoryValue, setCategoryValue] = useState('');
 
     useEffect(() => {
         if (action === 'update_intent') {
             setUpdateValue(NAMING_COMPONENTS.INTENT[0].value);
+        } else if (action === 'update_category') {
+            setCategoryValue('');
         }
     }, [action]);
 
@@ -47,6 +51,8 @@ export const BulkActionManager: React.FC<BulkActionManagerProps> = ({ keywords, 
             onBulkDelete(selectedKeywords);
         } else if (action === 'update_intent') {
             onBulkUpdate(selectedKeywords, { intent: updateValue });
+        } else if (action === 'update_category') {
+            onBulkUpdate(selectedKeywords, { category: categoryValue });
         }
         setSelectedKeywords([]);
     };
@@ -59,12 +65,22 @@ export const BulkActionManager: React.FC<BulkActionManagerProps> = ({ keywords, 
                     <span>With {selectedKeywords.length} selected:</span>
                     <select value={action} onChange={e => setAction(e.target.value)}>
                         <option value="update_intent">Change Intent to...</option>
+                        <option value="update_category">Change Category to...</option>
                         <option value="delete">Delete</option>
                     </select>
                     {action === 'update_intent' && (
                         <select value={updateValue} onChange={e => setUpdateValue(e.target.value)}>
                             {NAMING_COMPONENTS.INTENT.map(i => <option key={i.value} value={i.value}>{i.label}</option>)}
                         </select>
+                    )}
+                    {action === 'update_category' && (
+                        <input 
+                            type="text" 
+                            value={categoryValue} 
+                            onChange={e => setCategoryValue(e.target.value)} 
+                            placeholder="Enter category name"
+                            style={{ marginTop: 0 }}
+                        />
                     )}
                     <button className="button" style={{width: 'auto', marginTop: 0}} onClick={handleApply} disabled={disabled || selectedKeywords.length === 0}>
                         Apply
@@ -86,6 +102,7 @@ export const BulkActionManager: React.FC<BulkActionManagerProps> = ({ keywords, 
                                 </th>
                                 <th>Keyword</th>
                                 <th>Intent</th>
+                                <th>Category</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -101,6 +118,7 @@ export const BulkActionManager: React.FC<BulkActionManagerProps> = ({ keywords, 
                                         </td>
                                         <td>{kw.text}</td>
                                         <td>{kw.intent}</td>
+                                        <td>{kw.category || '-'}</td>
                                     </tr>
                                 );
                             })}
