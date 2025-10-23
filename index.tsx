@@ -854,9 +854,9 @@ const App = () => {
         if (!currentWorkspace) return prev;
         
         const newLogs = [newLog, ...(currentWorkspace.logs || [])].slice(0, 50);
-        // Only retain the 10 most recent reports for performance and UI clarity.
-        // This prevents excessive memory usage and keeps the report history manageable for users.
-        const reportHistory = [...(currentWorkspace.reportHistory || []), reportData].slice(-10);
+        // Only retain the 5 most recent reports for performance and UI clarity.
+        // This prevents excessive memory usage, localStorage quota issues, and keeps the report history manageable for users.
+        const reportHistory = [...(currentWorkspace.reportHistory || []), reportData].slice(-5);
 
         return {
             ...prev,

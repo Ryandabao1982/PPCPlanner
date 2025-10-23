@@ -102,7 +102,7 @@ export const PlanReportGenerator: React.FC<PlanReportGeneratorProps> = ({
 
         doc.setFontSize(12);
         doc.setTextColor(100, 100, 100);
-        doc.text('AI-Powered Campaign Analysis & Insights', pageWidth / 2, yPos, { align: 'center' });
+        doc.text('AI-Powered Campaign Analysis', pageWidth / 2, yPos, { align: 'center' });
         yPos += 6;
 
         doc.setFontSize(10);
@@ -110,18 +110,10 @@ export const PlanReportGenerator: React.FC<PlanReportGeneratorProps> = ({
         yPos += 15;
 
         // Key Metrics Table
-        doc.setFontSize(14);
-        doc.setTextColor(102, 126, 234);
-        doc.text('Key Metrics', 14, yPos);
-        yPos += 8;
-
         const totalCampaigns = workspace.campaigns.length;
         const totalAdGroups = workspace.adGroups.length;
         const totalKeywords = workspace.keywords.length;
         const totalBudget = workspace.campaigns.reduce((sum, c) => sum + (c.budget || 0), 0);
-        const assignedKeywordsCount = new Set(
-            workspace.adGroups.flatMap(ag => (ag.keywords || []).map(k => k.id))
-        ).size;
 
         autoTable(doc, {
             startY: yPos,
@@ -130,17 +122,16 @@ export const PlanReportGenerator: React.FC<PlanReportGeneratorProps> = ({
                 ['Total Campaigns', totalCampaigns.toString()],
                 ['Total Ad Groups', totalAdGroups.toString()],
                 ['Total Keywords', totalKeywords.toString()],
-                ['Daily Budget', `$${totalBudget.toFixed(2)}`],
-                ['Keyword Assignment Rate', `${totalKeywords > 0 ? ((assignedKeywordsCount / totalKeywords) * 100).toFixed(0) : 0}%`]
+                ['Daily Budget', `$${totalBudget.toFixed(2)}`]
             ],
             theme: 'grid',
             headStyles: { fillColor: [102, 126, 234] },
             margin: { left: 14, right: 14 }
         });
-        yPos = doc.lastAutoTable.finalY + 10;
+        yPos = doc.lastAutoTable.finalY + 15;
 
         // Executive Summary
-        checkNewPage(30);
+        checkNewPage(40);
         doc.setFontSize(14);
         doc.setTextColor(102, 126, 234);
         doc.text('Executive Summary', 14, yPos);
@@ -150,315 +141,45 @@ export const PlanReportGenerator: React.FC<PlanReportGeneratorProps> = ({
         doc.setTextColor(60, 60, 60);
         const summaryLines = doc.splitTextToSize(reportInsights.executiveSummary, pageWidth - 28);
         doc.text(summaryLines, 14, yPos);
-        yPos += summaryLines.length * 5 + 10;
+        yPos += summaryLines.length * 5 + 15;
 
-        // Key Strengths
-        checkNewPage(30);
+        // Top 3 Recommendations Only
+        checkNewPage(50);
         doc.setFontSize(14);
         doc.setTextColor(102, 126, 234);
-        doc.text('Key Strengths', 14, yPos);
-        yPos += 8;
-
-        doc.setFontSize(10);
-        doc.setTextColor(60, 60, 60);
-        reportInsights.strengths.forEach((strength, idx) => {
-            checkNewPage(10);
-            const lines = doc.splitTextToSize(`${idx + 1}. ${strength}`, pageWidth - 28);
-            doc.text(lines, 14, yPos);
-            yPos += lines.length * 5 + 2;
-        });
-        yPos += 5;
-
-        // Growth Opportunities
-        checkNewPage(30);
-        doc.setFontSize(14);
-        doc.setTextColor(102, 126, 234);
-        doc.text('Growth Opportunities', 14, yPos);
-        yPos += 8;
-
-        doc.setFontSize(10);
-        doc.setTextColor(60, 60, 60);
-        reportInsights.opportunities.forEach((opportunity, idx) => {
-            checkNewPage(10);
-            const lines = doc.splitTextToSize(`${idx + 1}. ${opportunity}`, pageWidth - 28);
-            doc.text(lines, 14, yPos);
-            yPos += lines.length * 5 + 2;
-        });
-        yPos += 5;
-
-        // Weaknesses
-        checkNewPage(30);
-        doc.setFontSize(14);
-        doc.setTextColor(102, 126, 234);
-        doc.text('Areas for Improvement', 14, yPos);
-        yPos += 8;
-
-        doc.setFontSize(10);
-        doc.setTextColor(60, 60, 60);
-        reportInsights.weaknesses.forEach((weakness, idx) => {
-            checkNewPage(10);
-            const lines = doc.splitTextToSize(`${idx + 1}. ${weakness}`, pageWidth - 28);
-            doc.text(lines, 14, yPos);
-            yPos += lines.length * 5 + 2;
-        });
-        yPos += 5;
-
-        // Budget Analysis
-        checkNewPage(30);
-        doc.setFontSize(14);
-        doc.setTextColor(102, 126, 234);
-        doc.text('Budget Analysis', 14, yPos);
-        yPos += 8;
-
-        doc.setFontSize(10);
-        doc.setTextColor(60, 60, 60);
-        const budgetLines = doc.splitTextToSize(reportInsights.budgetAnalysis, pageWidth - 28);
-        doc.text(budgetLines, 14, yPos);
-        yPos += budgetLines.length * 5 + 10;
-
-        // Budget Breakdown Table
-        if (reportInsights.budgetBreakdown && reportInsights.budgetBreakdown.length > 0) {
-            checkNewPage(40);
-            autoTable(doc, {
-                startY: yPos,
-                head: [['Campaign Type', 'Budget', 'Percentage']],
-                body: reportInsights.budgetBreakdown.map(item => [
-                    item.campaignType,
-                    `$${item.amount.toFixed(2)}`,
-                    `${item.percentage.toFixed(1)}%`
-                ]),
-                theme: 'grid',
-                headStyles: { fillColor: [102, 126, 234] },
-                margin: { left: 14, right: 14 }
-            });
-            yPos = (doc as any).lastAutoTable.finalY + 10;
-        }
-
-        // Keyword Strategy
-        checkNewPage(30);
-        doc.setFontSize(14);
-        doc.setTextColor(102, 126, 234);
-        doc.text('Keyword Strategy', 14, yPos);
-        yPos += 8;
-
-        doc.setFontSize(10);
-        doc.setTextColor(60, 60, 60);
-        const keywordLines = doc.splitTextToSize(reportInsights.keywordStrategy, pageWidth - 28);
-        doc.text(keywordLines, 14, yPos);
-        yPos += keywordLines.length * 5 + 10;
-
-        // Keyword Metrics Tables
-        if (reportInsights.keywordMetrics) {
-            checkNewPage(40);
-            doc.setFontSize(12);
-            doc.setTextColor(102, 126, 234);
-            doc.text('Keyword Distribution by Intent', 14, yPos);
-            yPos += 6;
-
-            if (reportInsights.keywordMetrics.byIntent && reportInsights.keywordMetrics.byIntent.length > 0) {
-                autoTable(doc, {
-                    startY: yPos,
-                    head: [['Intent', 'Count', 'Percentage']],
-                    body: reportInsights.keywordMetrics.byIntent.map(item => [
-                        item.intent,
-                        item.count.toString(),
-                        `${item.percentage.toFixed(1)}%`
-                    ]),
-                    theme: 'grid',
-                    headStyles: { fillColor: [102, 126, 234] },
-                    margin: { left: 14, right: 14 }
-                });
-                yPos = (doc as any).lastAutoTable.finalY + 10;
-            }
-
-            checkNewPage(40);
-            doc.setFontSize(12);
-            doc.setTextColor(102, 126, 234);
-            doc.text('Keyword Distribution by Match Type', 14, yPos);
-            yPos += 6;
-
-            if (reportInsights.keywordMetrics.byMatchType && reportInsights.keywordMetrics.byMatchType.length > 0) {
-                autoTable(doc, {
-                    startY: yPos,
-                    head: [['Match Type', 'Count', 'Percentage']],
-                    body: reportInsights.keywordMetrics.byMatchType.map(item => [
-                        item.matchType,
-                        item.count.toString(),
-                        `${item.percentage.toFixed(1)}%`
-                    ]),
-                    theme: 'grid',
-                    headStyles: { fillColor: [102, 126, 234] },
-                    margin: { left: 14, right: 14 }
-                });
-                yPos = (doc as any).lastAutoTable.finalY + 10;
-            }
-        }
-
-        // Campaign Structure
-        checkNewPage(30);
-        doc.setFontSize(14);
-        doc.setTextColor(102, 126, 234);
-        doc.text('Campaign Structure', 14, yPos);
-        yPos += 8;
-
-        doc.setFontSize(10);
-        doc.setTextColor(60, 60, 60);
-        const campaignLines = doc.splitTextToSize(reportInsights.campaignStructure, pageWidth - 28);
-        doc.text(campaignLines, 14, yPos);
-        yPos += campaignLines.length * 5 + 10;
-
-        // Campaign Metrics Tables
-        if (reportInsights.campaignMetrics) {
-            if (reportInsights.campaignMetrics.byCampaignType && reportInsights.campaignMetrics.byCampaignType.length > 0) {
-                checkNewPage(40);
-                doc.setFontSize(12);
-                doc.setTextColor(102, 126, 234);
-                doc.text('Campaign Distribution by Type', 14, yPos);
-                yPos += 6;
-
-                autoTable(doc, {
-                    startY: yPos,
-                    head: [['Campaign Type', 'Count', 'Avg Budget']],
-                    body: reportInsights.campaignMetrics.byCampaignType.map(item => [
-                        item.type,
-                        item.count.toString(),
-                        `$${item.avgBudget.toFixed(2)}`
-                    ]),
-                    theme: 'grid',
-                    headStyles: { fillColor: [102, 126, 234] },
-                    margin: { left: 14, right: 14 }
-                });
-                yPos = (doc as any).lastAutoTable.finalY + 10;
-            }
-
-            if (reportInsights.campaignMetrics.byTheme && reportInsights.campaignMetrics.byTheme.length > 0) {
-                checkNewPage(40);
-                doc.setFontSize(12);
-                doc.setTextColor(102, 126, 234);
-                doc.text('Campaign Distribution by Theme', 14, yPos);
-                yPos += 6;
-
-                autoTable(doc, {
-                    startY: yPos,
-                    head: [['Theme', 'Count']],
-                    body: reportInsights.campaignMetrics.byTheme.map(item => [
-                        item.theme,
-                        item.count.toString()
-                    ]),
-                    theme: 'grid',
-                    headStyles: { fillColor: [102, 126, 234] },
-                    margin: { left: 14, right: 14 }
-                });
-                yPos = (doc as any).lastAutoTable.finalY + 10;
-            }
-        }
-
-        // Performance Goals
-        checkNewPage(30);
-        doc.setFontSize(14);
-        doc.setTextColor(102, 126, 234);
-        doc.text('Performance Goals', 14, yPos);
-        yPos += 8;
-
-        doc.setFontSize(10);
-        doc.setTextColor(60, 60, 60);
-        const goalsAnalysisLines = doc.splitTextToSize(reportInsights.goalsAnalysis, pageWidth - 28);
-        doc.text(goalsAnalysisLines, 14, yPos);
-        yPos += goalsAnalysisLines.length * 5 + 10;
-
-        // Goals Breakdown Table
-        if (reportInsights.goalsBreakdown && reportInsights.goalsBreakdown.length > 0) {
-            checkNewPage(40);
-            autoTable(doc, {
-                startY: yPos,
-                head: [['Campaign', 'Goal Type', 'Target Value']],
-                body: reportInsights.goalsBreakdown.map(item => [
-                    item.campaignName,
-                    item.goalType,
-                    item.targetValue.toString() + (item.goalType.includes('ACoS') || item.goalType.includes('CTR') || item.goalType.includes('CVR') ? '%' : item.goalType.includes('CPC') ? ' $' : 'x')
-                ]),
-                theme: 'grid',
-                headStyles: { fillColor: [102, 126, 234] },
-                margin: { left: 14, right: 14 }
-            });
-            yPos = (doc as any).lastAutoTable.finalY + 10;
-        } else {
-            doc.setFontSize(10);
-            doc.setTextColor(100, 100, 100);
-            doc.text('No performance goals have been set for this plan.', 14, yPos);
-            yPos += 10;
-        }
-
-        // Recommendations
-        checkNewPage(30);
-        doc.setFontSize(14);
-        doc.setTextColor(102, 126, 234);
-        doc.text('Recommendations', 14, yPos);
+        doc.text('Top Recommendations', 14, yPos);
         yPos += 8;
 
         if (reportInsights.recommendations && reportInsights.recommendations.length > 0) {
+            const topRecommendations = reportInsights.recommendations.slice(0, 3);
             autoTable(doc, {
                 startY: yPos,
-                head: [['Priority', 'Action', 'Impact', 'Effort']],
-                body: reportInsights.recommendations.map(rec => [
+                head: [['Priority', 'Action', 'Impact']],
+                body: topRecommendations.map(rec => [
                     rec.priority,
                     rec.action,
-                    rec.impact,
-                    rec.effort
+                    rec.impact
                 ]),
                 theme: 'grid',
                 headStyles: { fillColor: [102, 126, 234] },
                 margin: { left: 14, right: 14 },
                 columnStyles: {
-                    0: { cellWidth: 20 },
-                    1: { cellWidth: 80 },
-                    2: { cellWidth: 40 },
-                    3: { cellWidth: 30 }
+                    0: { cellWidth: 25 },
+                    1: { cellWidth: 110 },
+                    2: { cellWidth: 47 }
                 }
             });
             yPos = (doc as any).lastAutoTable.finalY + 10;
         }
 
-        // Performance Projections
-        if (reportInsights.performanceProjections) {
-            checkNewPage(30);
-            doc.setFontSize(14);
-            doc.setTextColor(102, 126, 234);
-            doc.text('Performance Projections', 14, yPos);
-            yPos += 8;
-
-            doc.setFontSize(10);
-            doc.setTextColor(60, 60, 60);
-            doc.text(`Estimated Impressions: ${reportInsights.performanceProjections.estimatedImpressions}`, 14, yPos);
-            yPos += 6;
-            doc.text(`Estimated Clicks: ${reportInsights.performanceProjections.estimatedClicks}`, 14, yPos);
-            yPos += 6;
-            doc.text(`Estimated Conversions: ${reportInsights.performanceProjections.estimatedConversions}`, 14, yPos);
-            yPos += 10;
-
-            if (reportInsights.performanceProjections.assumptions && reportInsights.performanceProjections.assumptions.length > 0) {
-                doc.setFontSize(11);
-                doc.text('Key Assumptions:', 14, yPos);
-                yPos += 6;
-                
-                doc.setFontSize(10);
-                reportInsights.performanceProjections.assumptions.forEach((assumption, idx) => {
-                    checkNewPage(8);
-                    const lines = doc.splitTextToSize(`• ${assumption}`, pageWidth - 28);
-                    doc.text(lines, 14, yPos);
-                    yPos += lines.length * 5 + 2;
-                });
-            }
-        }
-
-        // Footer on last page
+        // Footer on all pages
         const totalPages = (doc as any).internal.getNumberOfPages();
         for (let i = 1; i <= totalPages; i++) {
             doc.setPage(i);
             doc.setFontSize(8);
             doc.setTextColor(150, 150, 150);
             doc.text(
-                'Generated by Good-Wit Commerce PPC Planner | AI-powered insights for data-driven decisions',
+                'Generated by Good-Wit Commerce PPC Planner',
                 pageWidth / 2,
                 pageHeight - 10,
                 { align: 'center' }
