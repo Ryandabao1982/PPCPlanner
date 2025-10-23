@@ -10,12 +10,14 @@ interface Keyword {
     text: string;
     intent: string;
     stemmed: string;
+    category?: string;
 }
 
 interface StagedKeyword {
     text: string;
     intent: string;
     type?: 'variation' | 'related';
+    category?: string;
 }
 
 interface NegativeCandidate {
@@ -38,6 +40,8 @@ const LoadingSpinner = () => <div className="spinner"></div>;
 export const KeywordBank: React.FC<KeywordBankProps> = ({ keywords, onAdd, onUpdate, onDelete, disabled, showToast }) => {
     const [newKeywords, setNewKeywords] = useState('');
     const [newIntent, setNewIntent] = useState(NAMING_COMPONENTS.INTENT[0].value);
+    const [newCategory, setNewCategory] = useState('');
+    const [categoryFilter, setCategoryFilter] = useState('');
     const { sortedItems, requestSort, sortConfig } = useSortableTable<Keyword>(keywords, 'text');
     
     const [isLoading, setIsLoading] = useState(false);
@@ -46,6 +50,18 @@ export const KeywordBank: React.FC<KeywordBankProps> = ({ keywords, onAdd, onUpd
     const [negativeCandidates, setNegativeCandidates] = useState<NegativeCandidate[]>([]);
     const [selectedStaged, setSelectedStaged] = useState<Set<string>>(new Set());
     const [selectedSuggested, setSelectedSuggested] = useState<Set<string>>(new Set());
+    
+    // Get unique categories from keywords
+    const availableCategories = useMemo(() => {
+        const categories = new Set(keywords.map(k => k.category).filter(c => c));
+        return Array.from(categories).sort();
+    }, [keywords]);
+    
+    // Filter keywords by category
+    const filteredKeywords = useMemo(() => {
+        if (!categoryFilter) return sortedItems;
+        return sortedItems.filter(k => k.category === categoryFilter);
+    }, [sortedItems, categoryFilter]);
 
     const clearStagingArea = () => {
         setStagedKeywords([]);
@@ -54,6 +70,7 @@ export const KeywordBank: React.FC<KeywordBankProps> = ({ keywords, onAdd, onUpd
         setSelectedStaged(new Set());
         setSelectedSuggested(new Set());
         setNewKeywords('');
+        setNewCategory('');
     };
 
     const handleGetSuggestions = async () => {
@@ -66,7 +83,7 @@ export const KeywordBank: React.FC<KeywordBankProps> = ({ keywords, onAdd, onUpd
         setIsLoading(true);
         showToast("Getting AI suggestions...", "info");
 
-        const initialStaged = keywordsToProcess.map(k => ({ text: k, intent: newIntent }));
+        const initialStaged = keywordsToProcess.map(k => ({ text: k, intent: newIntent, category: newCategory || undefined }));
         setStagedKeywords(initialStaged);
         setSelectedStaged(new Set(initialStaged.map(k => k.text)));
         setSuggestedKeywords([]); // Clear previous suggestions
@@ -147,7 +164,8 @@ RULES:
                 const newSuggestions = parsedResponse.suggestedKeywords.map((k: any) => ({ 
                     text: k.text, 
                     intent: newIntent,
-                    type: k.type 
+                    type: k.type,
+                    category: newCategory || undefined
                 }));
                 setSuggestedKeywords(newSuggestions);
                 setSelectedSuggested(new Set(newSuggestions.map(k => k.text)));
@@ -175,7 +193,8 @@ RULES:
                 id: Date.now() + Math.random(),
                 text: k.text,
                 intent: k.intent,
-                stemmed: stem(k.text)
+                stemmed: stem(k.text),
+                category: k.category
             }));
             onAdd(newKeywordObjects);
         }
@@ -236,6 +255,20 @@ RULES:
                             <select value={newIntent} onChange={e => setNewIntent(e.target.value)} disabled={disabled || isLoading}>
                                 {NAMING_COMPONENTS.INTENT.map(i => <option key={i.value} value={i.value}>{i.label}</option>)}
                             </select>
+                        </div>
+                        <div className="form-group">
+                            <label>Category (Optional)</label>
+                            <input 
+                                type="text" 
+                                value={newCategory} 
+                                onChange={e => setNewCategory(e.target.value)} 
+                                placeholder="e.g., Beer Bongs, Reusable Bags"
+                                disabled={disabled || isLoading}
+                                list="category-suggestions"
+                            />
+                            <datalist id="category-suggestions">
+                                {availableCategories.map((cat, i) => <option key={i} value={cat} />)}
+                            </datalist>
                         </div>
                          <button className="button" onClick={handleGetSuggestions} disabled={!newKeywords.trim() || disabled || isLoading} style={{width: '100%'}}>
                             {isLoading ? 'Thinking...' : 'Analyze & Suggest Keywords'}
@@ -308,35 +341,61 @@ RULES:
                 )}
                 
                 {keywords.length > 0 && (
-                    <div className="keyword-table-container" style={{marginTop: '1.5rem'}}>
-                        <table className="keyword-table">
-                            <thead>
-                                <tr>
-                                    <th><button className="sort-btn" onClick={() => requestSort('text')}>Keyword {renderSortIndicator('text')}</button></th>
-                                    <th><button className="sort-btn" onClick={() => requestSort('intent')}>Intent {renderSortIndicator('intent')}</button></th>
-                                    <th><button className="sort-btn" onClick={() => requestSort('stemmed')}>Stemmed {renderSortIndicator('stemmed')}</button></th>
-                                    <th>Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {sortedItems.map(kw => (
-                                    <tr key={kw.id}>
-                                        <td>
-                                            <input type="text" value={kw.text} onChange={e => onUpdate(kw.id, { text: e.target.value, stemmed: stem(e.target.value) })} disabled={disabled} />
-                                        </td>
-                                        <td>
-                                             <select value={kw.intent} onChange={e => onUpdate(kw.id, { intent: e.target.value })} disabled={disabled}>
-                                                {NAMING_COMPONENTS.INTENT.map(i => <option key={i.value} value={i.value}>{i.label}</option>)}
-                                            </select>
-                                        </td>
-                                        <td>{kw.stemmed}</td>
-                                        <td>
-                                            <button className="delete-button" onClick={() => onDelete(kw.id)} disabled={disabled}>Delete</button>
-                                        </td>
+                    <div style={{marginTop: '1.5rem'}}>
+                        {availableCategories.length > 0 && (
+                            <div className="form-group" style={{marginBottom: '1rem', maxWidth: '300px'}}>
+                                <label>Filter by Category</label>
+                                <select value={categoryFilter} onChange={e => setCategoryFilter(e.target.value)}>
+                                    <option value="">All Categories ({keywords.length})</option>
+                                    {availableCategories.map(cat => (
+                                        <option key={cat} value={cat}>
+                                            {cat} ({keywords.filter(k => k.category === cat).length})
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+                        )}
+                        <div className="keyword-table-container">
+                            <table className="keyword-table">
+                                <thead>
+                                    <tr>
+                                        <th><button className="sort-btn" onClick={() => requestSort('text')}>Keyword {renderSortIndicator('text')}</button></th>
+                                        <th><button className="sort-btn" onClick={() => requestSort('intent')}>Intent {renderSortIndicator('intent')}</button></th>
+                                        <th><button className="sort-btn" onClick={() => requestSort('category')}>Category {renderSortIndicator('category')}</button></th>
+                                        <th><button className="sort-btn" onClick={() => requestSort('stemmed')}>Stemmed {renderSortIndicator('stemmed')}</button></th>
+                                        <th>Actions</th>
                                     </tr>
-                                ))}
-                            </tbody>
-                        </table>
+                                </thead>
+                                <tbody>
+                                    {filteredKeywords.map(kw => (
+                                        <tr key={kw.id}>
+                                            <td>
+                                                <input type="text" value={kw.text} onChange={e => onUpdate(kw.id, { text: e.target.value, stemmed: stem(e.target.value) })} disabled={disabled} />
+                                            </td>
+                                            <td>
+                                                 <select value={kw.intent} onChange={e => onUpdate(kw.id, { intent: e.target.value })} disabled={disabled}>
+                                                    {NAMING_COMPONENTS.INTENT.map(i => <option key={i.value} value={i.value}>{i.label}</option>)}
+                                                </select>
+                                            </td>
+                                            <td>
+                                                <input 
+                                                    type="text" 
+                                                    value={kw.category || ''} 
+                                                    onChange={e => onUpdate(kw.id, { category: e.target.value })} 
+                                                    placeholder="Category"
+                                                    disabled={disabled}
+                                                    list="category-suggestions"
+                                                />
+                                            </td>
+                                            <td>{kw.stemmed}</td>
+                                            <td>
+                                                <button className="delete-button" onClick={() => onDelete(kw.id)} disabled={disabled}>Delete</button>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 )}
             </div>
