@@ -1,43 +1,12 @@
 import React, { useState, useRef } from 'react';
-import { GoogleGenAI, Type } from "@google/genai";
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import { generateReportWithRetry, ReportInsights } from '../utils/aiReportGenerator';
 
 interface PlanReportGeneratorProps {
     workspace: any;
     disabled: boolean;
     onReportGenerated: (reportData: any) => void;
-}
-
-interface ReportInsights {
-    executiveSummary: string;
-    strengths: string[];
-    opportunities: string[];
-    weaknesses: string[];
-    budgetAnalysis: string;
-    budgetBreakdown: Array<{campaignType: string, amount: number, percentage: number}>;
-    keywordStrategy: string;
-    keywordMetrics: {
-        totalKeywords: number;
-        assignedKeywords: number;
-        unassignedKeywords: number;
-        byIntent: Array<{intent: string, count: number, percentage: number}>;
-        byMatchType: Array<{matchType: string, count: number, percentage: number}>;
-    };
-    campaignStructure: string;
-    campaignMetrics: {
-        byCampaignType: Array<{type: string, count: number, avgBudget: number}>;
-        byTheme: Array<{theme: string, count: number}>;
-    };
-    goalsAnalysis: string;
-    goalsBreakdown: Array<{campaignName: string, goalType: string, targetValue: number}>;
-    recommendations: Array<{priority: string, action: string, impact: string, effort: string}>;
-    performanceProjections: {
-        estimatedImpressions: string;
-        estimatedClicks: string;
-        estimatedConversions: string;
-        assumptions: string[];
-    };
 }
 
 const LoadingSpinner = () => <div className="spinner"></div>;
@@ -64,293 +33,17 @@ export const PlanReportGenerator: React.FC<PlanReportGeneratorProps> = ({
             // This client-side implementation is for demonstration purposes only.
             const apiKey = process.env.API_KEY;
             
-            if (!apiKey || apiKey === 'undefined') {
-                throw new Error('API key is not configured. Please set the GEMINI_API_KEY environment variable.');
-            }
-            
-            const ai = new GoogleGenAI({ apiKey });
-
-            // Prepare data summary for AI analysis
-            const totalCampaigns = workspace.campaigns.length;
-            const totalAdGroups = workspace.adGroups.length;
-            const totalKeywords = workspace.keywords.length;
-            const totalProducts = workspace.products.length;
-            const totalBudget = workspace.campaigns.reduce((sum, c) => sum + (c.budget || 0), 0);
-            
-            const assignedKeywordsCount = new Set(
-                workspace.adGroups.flatMap(ag => (ag.keywords || []).map(k => k.id))
-            ).size;
-
-            const campaignTypes = workspace.campaigns.reduce((acc, c) => {
-                acc[c.type] = (acc[c.type] || 0) + 1;
-                return acc;
-            }, {});
-
-            const campaignThemes = workspace.campaigns.reduce((acc, c) => {
-                acc[c.theme] = (acc[c.theme] || 0) + 1;
-                return acc;
-            }, {});
-
-            const intentBreakdown = workspace.keywords.reduce((acc, k) => {
-                acc[k.intent] = (acc[k.intent] || 0) + 1;
-                return acc;
-            }, {});
-
-            const averageBid = workspace.adGroups.length > 0 
-                ? workspace.adGroups.reduce((sum, ag) => sum + (ag.defaultBid || 0), 0) / workspace.adGroups.length
-                : 0;
-
-            const goals = workspace.goals || [];
-            
-            // Map goals to campaign names for better context
-            const goalsWithCampaigns = goals.map(g => {
-                const campaign = workspace.campaigns.find(c => c.id === g.campaignId);
-                return {
-                    campaignName: campaign?.name || 'Unknown Campaign',
-                    goalType: g.type,
-                    targetValue: g.value
-                };
-            });
-
-            // Calculate detailed metrics
-            const matchTypeBreakdown = workspace.keywords.reduce((acc, k) => {
-                const matchType = k.matchType || 'BROAD';
-                acc[matchType] = (acc[matchType] || 0) + 1;
-                return acc;
-            }, {});
-
-            const campaignTypeDetails = workspace.campaigns.reduce((acc, c) => {
-                if (!acc[c.type]) {
-                    acc[c.type] = { count: 0, totalBudget: 0 };
-                }
-                acc[c.type].count += 1;
-                acc[c.type].totalBudget += c.budget || 0;
-                return acc;
-            }, {});
-
-            const prompt = `You are an expert Amazon PPC strategist creating a DETAILED, DATA-DRIVEN brand presentation report.
-
-Analyze the following PPC plan for brand "${workspace.brand}":
-
-CAMPAIGN OVERVIEW:
-- Total Campaigns: ${totalCampaigns}
-- Total Ad Groups: ${totalAdGroups}
-- Total Daily Budget: $${totalBudget.toFixed(2)}
-- Campaign Types: ${JSON.stringify(campaignTypes)}
-- Campaign Themes: ${JSON.stringify(campaignThemes)}
-- Campaign Type Budget Breakdown: ${JSON.stringify(campaignTypeDetails)}
-
-KEYWORD STRATEGY:
-- Total Keywords: ${totalKeywords}
-- Assigned Keywords: ${assignedKeywordsCount}
-- Unassigned Keywords: ${totalKeywords - assignedKeywordsCount}
-- Assignment Rate: ${totalKeywords > 0 ? ((assignedKeywordsCount / totalKeywords) * 100).toFixed(0) : 0}%
-- Intent Breakdown: ${JSON.stringify(intentBreakdown)}
-- Match Type Breakdown: ${JSON.stringify(matchTypeBreakdown)}
-
-BIDDING STRATEGY:
-- Average Default Bid: $${averageBid.toFixed(2)}
-- Total Products: ${totalProducts}
-
-PERFORMANCE GOALS:
-${goals.length > 0 ? goalsWithCampaigns.map(g => `- ${g.campaignName}: ${g.goalType} = ${g.targetValue}${g.goalType.includes('ACoS') || g.goalType.includes('CTR') || g.goalType.includes('CVR') ? '%' : g.goalType.includes('CPC') ? ' $' : 'x'}`).join('\n') : '- No goals set'}
-
-Create a COMPREHENSIVE, DETAILED report with:
-1. Executive Summary (3-4 sentences) - Strategic overview and expected business outcomes
-2. Key Strengths (5-7 bullet points) - Detailed competitive advantages
-3. Growth Opportunities (5-7 bullet points) - Specific improvement areas with business impact
-4. Weaknesses (3-5 bullet points) - Areas of concern or risk
-5. Budget Analysis (3-4 sentences) - Detailed budget effectiveness and allocation concerns
-6. Budget Breakdown - Array of objects with: campaignType (string), amount (number), percentage (number)
-7. Keyword Strategy (3-4 sentences) - In-depth coverage analysis and gaps
-8. Keyword Metrics - Detailed object with:
-   - totalKeywords, assignedKeywords, unassignedKeywords (numbers)
-   - byIntent: array of {intent, count, percentage}
-   - byMatchType: array of {matchType, count, percentage}
-9. Campaign Structure (3-4 sentences) - Structural quality and improvement recommendations
-10. Campaign Metrics - Detailed object with:
-    - byCampaignType: array of {type, count, avgBudget}
-    - byTheme: array of {theme, count}
-11. Goals Analysis (3-4 sentences) - Evaluate if goals are realistic, alignment with budget/strategy, and identify missing goals
-12. Goals Breakdown - Array of objects with: campaignName (string), goalType (string), targetValue (number)
-13. Recommendations (6-8 prioritized actions) - Each with: priority (High/Medium/Low), action (string), impact (string), effort (string)
-14. Performance Projections - Object with:
-    - estimatedImpressions (string with range)
-    - estimatedClicks (string with range)
-    - estimatedConversions (string with range)
-    - assumptions (array of 3-4 key assumptions)
-
-IMPORTANT: Provide detailed, actionable insights with specific numbers and percentages. Focus on data-driven recommendations that demonstrate clear ROI potential.`;
-
-            const response = await ai.models.generateContent({
-                model: "gemini-2.0-flash-001",
-                contents: prompt,
-                config: {
-                    responseMimeType: "application/json",
-                    responseSchema: {
-                        type: Type.OBJECT,
-                        properties: {
-                            executiveSummary: {
-                                type: Type.STRING,
-                                description: '3-4 sentence executive summary with strategic overview'
-                            },
-                            strengths: {
-                                type: Type.ARRAY,
-                                description: 'List of 5-7 key strengths with detailed competitive advantages',
-                                items: { type: Type.STRING }
-                            },
-                            opportunities: {
-                                type: Type.ARRAY,
-                                description: 'List of 5-7 growth opportunities with specific business impact',
-                                items: { type: Type.STRING }
-                            },
-                            weaknesses: {
-                                type: Type.ARRAY,
-                                description: 'List of 3-5 weaknesses or areas of concern',
-                                items: { type: Type.STRING }
-                            },
-                            budgetAnalysis: {
-                                type: Type.STRING,
-                                description: '3-4 sentence detailed budget effectiveness analysis'
-                            },
-                            budgetBreakdown: {
-                                type: Type.ARRAY,
-                                description: 'Budget breakdown by campaign type',
-                                items: {
-                                    type: Type.OBJECT,
-                                    properties: {
-                                        campaignType: { type: Type.STRING },
-                                        amount: { type: Type.NUMBER },
-                                        percentage: { type: Type.NUMBER }
-                                    }
-                                }
-                            },
-                            keywordStrategy: {
-                                type: Type.STRING,
-                                description: '3-4 sentence in-depth keyword strategy assessment'
-                            },
-                            keywordMetrics: {
-                                type: Type.OBJECT,
-                                properties: {
-                                    totalKeywords: { type: Type.NUMBER },
-                                    assignedKeywords: { type: Type.NUMBER },
-                                    unassignedKeywords: { type: Type.NUMBER },
-                                    byIntent: {
-                                        type: Type.ARRAY,
-                                        items: {
-                                            type: Type.OBJECT,
-                                            properties: {
-                                                intent: { type: Type.STRING },
-                                                count: { type: Type.NUMBER },
-                                                percentage: { type: Type.NUMBER }
-                                            }
-                                        }
-                                    },
-                                    byMatchType: {
-                                        type: Type.ARRAY,
-                                        items: {
-                                            type: Type.OBJECT,
-                                            properties: {
-                                                matchType: { type: Type.STRING },
-                                                count: { type: Type.NUMBER },
-                                                percentage: { type: Type.NUMBER }
-                                            }
-                                        }
-                                    }
-                                }
-                            },
-                            campaignStructure: {
-                                type: Type.STRING,
-                                description: '3-4 sentence structural quality evaluation'
-                            },
-                            campaignMetrics: {
-                                type: Type.OBJECT,
-                                properties: {
-                                    byCampaignType: {
-                                        type: Type.ARRAY,
-                                        items: {
-                                            type: Type.OBJECT,
-                                            properties: {
-                                                type: { type: Type.STRING },
-                                                count: { type: Type.NUMBER },
-                                                avgBudget: { type: Type.NUMBER }
-                                            }
-                                        }
-                                    },
-                                    byTheme: {
-                                        type: Type.ARRAY,
-                                        items: {
-                                            type: Type.OBJECT,
-                                            properties: {
-                                                theme: { type: Type.STRING },
-                                                count: { type: Type.NUMBER }
-                                            }
-                                        }
-                                    }
-                                }
-                            },
-                            goalsAnalysis: {
-                                type: Type.STRING,
-                                description: '3-4 sentence evaluation of goals: realism, alignment with budget/strategy, missing goals'
-                            },
-                            goalsBreakdown: {
-                                type: Type.ARRAY,
-                                description: 'Breakdown of goals by campaign',
-                                items: {
-                                    type: Type.OBJECT,
-                                    properties: {
-                                        campaignName: { type: Type.STRING },
-                                        goalType: { type: Type.STRING },
-                                        targetValue: { type: Type.NUMBER }
-                                    }
-                                }
-                            },
-                            recommendations: {
-                                type: Type.ARRAY,
-                                description: 'List of 6-8 prioritized recommendations',
-                                items: {
-                                    type: Type.OBJECT,
-                                    properties: {
-                                        priority: { type: Type.STRING },
-                                        action: { type: Type.STRING },
-                                        impact: { type: Type.STRING },
-                                        effort: { type: Type.STRING }
-                                    }
-                                }
-                            },
-                            performanceProjections: {
-                                type: Type.OBJECT,
-                                properties: {
-                                    estimatedImpressions: { type: Type.STRING },
-                                    estimatedClicks: { type: Type.STRING },
-                                    estimatedConversions: { type: Type.STRING },
-                                    assumptions: {
-                                        type: Type.ARRAY,
-                                        items: { type: Type.STRING }
-                                    }
-                                }
-                            }
-                        },
-                        required: ['executiveSummary', 'strengths', 'opportunities', 'weaknesses', 'budgetAnalysis', 'budgetBreakdown', 'keywordStrategy', 'keywordMetrics', 'campaignStructure', 'campaignMetrics', 'goalsAnalysis', 'goalsBreakdown', 'recommendations', 'performanceProjections']
-                    }
-                }
-            });
-
-            // Safely parse the JSON response with error handling
-            let insights;
-            try {
-                const responseText = response.text?.trim();
-                if (!responseText) {
-                    throw new Error('Empty response from AI service');
-                }
-                insights = JSON.parse(responseText);
-            } catch (parseError) {
-                console.error("JSON parsing error:", parseError);
-                throw new Error(`Failed to parse AI response: ${parseError instanceof Error ? parseError.message : 'Invalid JSON format'}`);
-            }
+            // Generate report using the new utility with retry logic
+            const insights = await generateReportWithRetry(workspace, apiKey);
             
             setReportInsights(insights);
             setShowReport(true);
+            
+            // Calculate plan snapshot metrics
+            const totalCampaigns = workspace.campaigns.length;
+            const totalAdGroups = workspace.adGroups.length;
+            const totalKeywords = workspace.keywords.length;
+            const totalBudget = workspace.campaigns.reduce((sum, c) => sum + (c.budget || 0), 0);
             
             onReportGenerated({
                 timestamp: new Date().toISOString(),
@@ -368,8 +61,8 @@ IMPORTANT: Provide detailed, actionable insights with specific numbers and perce
             console.error("Error generating report:", error);
             let errorMsg = "Failed to generate report.";
             if (error && typeof error === "object") {
-                if (error.message) {
-                    errorMsg += `\nDetails: ${error.message}`;
+                if ((error as any).message) {
+                    errorMsg += `\nDetails: ${(error as any).message}`;
                 } else {
                     errorMsg += `\nDetails: ${JSON.stringify(error)}`;
                 }
