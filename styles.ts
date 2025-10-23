@@ -334,7 +334,7 @@ export const styles = `
   }
   .delete-button {
     background-color: var(--error-color);
-    color: #fff;
+    color: var(--surface-color);
   }
   .delete-button:hover:not(:disabled) {
     background-color: #c82333;
