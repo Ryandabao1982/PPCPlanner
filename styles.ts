@@ -158,7 +158,7 @@ export const styles = `
   .nav-item:hover { background-color: var(--surface-color-2); color: var(--text-color); }
   .nav-item.active {
     background-color: var(--primary-color);
-    color: #fff;
+    color: var(--surface-color);
     font-weight: 600;
     box-shadow: 0 4px 8px rgba(0, 123, 255, 0.2);
   }
