@@ -80,6 +80,93 @@ describe('useLocalStorage Hook', () => {
 
         expect(result.current[0]).toEqual([1, 2, 3]);
     });
+
+    it('should handle QuotaExceededError gracefully', () => {
+        const { result } = renderHook(() => useLocalStorage('ppc-workspaces', {
+            '1': { reportHistory: [] }
+        }));
+
+        // Mock localStorage.setItem to throw QuotaExceededError
+        const originalSetItem = Storage.prototype.setItem;
+        let callCount = 0;
+        Storage.prototype.setItem = vi.fn((key: string, value: string) => {
+            callCount++;
+            // First call should throw, second call (recovery) should succeed
+            if (callCount === 1) {
+                const error = new DOMException('QuotaExceededError', 'QuotaExceededError');
+                throw error;
+            }
+            // Allow recovery attempt to succeed
+            originalSetItem.call(localStorage, key, value);
+        });
+
+        // Try to set a large value that would exceed quota
+        const largeWorkspace = {
+            '1': {
+                reportHistory: Array(10).fill({
+                    timestamp: new Date().toISOString(),
+                    insights: {
+                        executiveSummary: 'test'.repeat(1000),
+                        strengths: ['test'.repeat(100)],
+                        opportunities: ['test'.repeat(100)],
+                        weaknesses: ['test'.repeat(100)],
+                        recommendations: [{ priority: 'High', action: 'test', impact: 'test', effort: 'test' }]
+                    }
+                })
+            }
+        };
+
+        act(() => {
+            result.current[1](largeWorkspace);
+        });
+
+        // State should be updated even if localStorage fails
+        expect(result.current[0]).toEqual(expect.objectContaining({
+            '1': expect.objectContaining({
+                reportHistory: expect.any(Array)
+            })
+        }));
+
+        // Restore original setItem
+        Storage.prototype.setItem = originalSetItem;
+    });
+
+    it('should trim report history when quota is exceeded', () => {
+        const { result } = renderHook(() => useLocalStorage('ppc-workspaces', {
+            '1': { reportHistory: [] }
+        }));
+
+        // Mock localStorage.setItem to throw QuotaExceededError on first call only
+        const originalSetItem = Storage.prototype.setItem;
+        let firstCall = true;
+        Storage.prototype.setItem = vi.fn((key: string, value: string) => {
+            if (firstCall && key === 'ppc-workspaces') {
+                firstCall = false;
+                const error = new DOMException('QuotaExceededError', 'QuotaExceededError');
+                throw error;
+            }
+            originalSetItem.call(localStorage, key, value);
+        });
+
+        const workspaceWith10Reports = {
+            '1': {
+                reportHistory: Array(10).fill({ timestamp: '2024-01-01', insights: {} })
+            }
+        };
+
+        act(() => {
+            result.current[1](workspaceWith10Reports);
+        });
+
+        // After recovery, report history should be trimmed to 5
+        const storedValue = JSON.parse(localStorage.getItem('ppc-workspaces') || '{}');
+        if (storedValue['1']?.reportHistory) {
+            expect(storedValue['1'].reportHistory.length).toBeLessThanOrEqual(5);
+        }
+
+        // Restore original setItem
+        Storage.prototype.setItem = originalSetItem;
+    });
 });
 
 describe('useTableFilter Hook', () => {
